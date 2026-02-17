@@ -45,9 +45,11 @@ class ReportStorageService
         if (DB::table('users')->where('user_id', $userId)->exists()) {
             return;
         }
+        $roleId = $this->resolveDefaultRoleId();
         $row = [
             'user_id' => $userId,
             'mobile_number' => $mobileNumber,
+            'role_id' => $roleId,
         ];
         if (Schema::hasColumn('users', 'created_at')) {
             $row['created_at'] = now();
@@ -56,6 +58,24 @@ class ReportStorageService
             $row['updated_at'] = now();
         }
         DB::table('users')->insert($row);
+    }
+
+    private function resolveDefaultRoleId(): int
+    {
+        $envRoleId = (int) (env('DEFAULT_ROLE_ID') ?: 0);
+        if ($envRoleId > 0) {
+            return $envRoleId;
+        }
+        if (Schema::hasTable('roles') && Schema::hasColumn('roles', 'role_id')) {
+            $roleId = DB::table('roles')
+                ->where('is_active', 1)
+                ->orderBy('role_id')
+                ->value('role_id');
+            if ($roleId) {
+                return (int) $roleId;
+            }
+        }
+        throw new RuntimeException('Default role_id is not configured. Set DEFAULT_ROLE_ID or add an active role.');
     }
 
     public function findExistingReport(string $reportType, string $controlNumber): ?array
