@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 class ReportStorageService
@@ -11,9 +12,18 @@ class ReportStorageService
     public function resolveUserId(?string $userId, ?string $mobileNumber): string
     {
         if ($userId) {
-            $exists = DB::table('users')->where('user_id', $userId)->exists();
-            if (!$exists) {
-                throw new RuntimeException('User ID not found in LMS database.');
+            $row = DB::table('users')->where('user_id', $userId)->first();
+            if (!$row) {
+                if (!$mobileNumber) {
+                    throw new RuntimeException('User ID not found in LMS database.');
+                }
+                $this->insertUserIfMissing($userId, $mobileNumber);
+                return $userId;
+            }
+            if ($mobileNumber && empty($row->mobile_number ?? null)) {
+                DB::table('users')->where('user_id', $userId)->update([
+                    'mobile_number' => $mobileNumber,
+                ]);
             }
             return $userId;
         }
@@ -28,6 +38,24 @@ class ReportStorageService
         }
 
         return (string) $row->user_id;
+    }
+
+    private function insertUserIfMissing(string $userId, string $mobileNumber): void
+    {
+        if (DB::table('users')->where('user_id', $userId)->exists()) {
+            return;
+        }
+        $row = [
+            'user_id' => $userId,
+            'mobile_number' => $mobileNumber,
+        ];
+        if (Schema::hasColumn('users', 'created_at')) {
+            $row['created_at'] = now();
+        }
+        if (Schema::hasColumn('users', 'updated_at')) {
+            $row['updated_at'] = now();
+        }
+        DB::table('users')->insert($row);
     }
 
     public function findExistingReport(string $reportType, string $controlNumber): ?array
