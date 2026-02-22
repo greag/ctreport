@@ -864,7 +864,10 @@ class CibilParser
                     $current = null;
                 }
                 $current = $current ?: $this->blankAccount();
-                $current['MemberName'] = $lines[$i + 1];
+                $next = $this->nextAccountMemberValue($lines, $i);
+                if ($next !== null) {
+                    $current['MemberName'] = $next;
+                }
                 $inPaymentStatus = false;
                 $paymentStatusDpd = null;
                 $paymentStatusExplicit = false;
@@ -873,7 +876,7 @@ class CibilParser
             if ($label === 'Account Type') {
                 $current = $current ?: $this->blankAccount();
                 $inline = $this->inlineValueForLabel($rawLine, 'Account Type');
-                $value = $this->sanitizeAccountValue($inline ?? $this->nextAccountValue($lines, $i), $labels);
+                $value = $this->sanitizeAccountValue($inline ?? $this->nextAccountTypeValue($lines, $i), $labels);
                 if ($value !== null) {
                     $current['AccountType'] = $this->normalizeValue($value);
                 }
@@ -1430,6 +1433,62 @@ class CibilParser
                 return $date;
             }
         }
+        return null;
+    }
+
+    private function nextAccountMemberValue(array $lines, int $index): ?string
+    {
+        $labels = [
+            'Member Name',
+            'Account Type',
+            'Account Number',
+            'Ownership',
+            'Credit Limit',
+            'Cash Limit',
+            'High Credit',
+            'Sanctioned Amount',
+            'Current Balance',
+            'Amount Overdue',
+            'Rate of Interest',
+            'Repayment Tenure',
+            'EMI Amount',
+            'Payment Frequency',
+            'Actual Payment Amount',
+            'Date Opened / Disbursed',
+            'Date Closed',
+            'Date of Last Payment',
+            'Date Reported And Certified',
+            'Value of Collateral',
+            'Type of Collateral',
+            'Suit - Filed / Willful Default',
+            'Suit - Filed / Wilful Default',
+            'Credit Facility Status',
+            'Written-off Amount (Total)',
+            'Written-off Amount (Principal)',
+            'Settlement Amount',
+            'Payment Start Date',
+            'Payment End Date',
+            'Payment History',
+            'ENQUIRY DETAILS',
+        ];
+
+        for ($i = $index + 1; $i < count($lines); $i++) {
+            $candidate = $lines[$i];
+            if ($this->isJunkLine($candidate) || $this->isPageNumberLine($candidate)) {
+                continue;
+            }
+            if ($this->isHeaderDateTimeLine($candidate)) {
+                continue;
+            }
+            if ($this->matchAccountLabel($candidate, $labels) !== null) {
+                return null;
+            }
+            if ($this->isPlaceholderValue($candidate)) {
+                continue;
+            }
+            return $candidate;
+        }
+
         return null;
     }
 
@@ -2299,6 +2358,127 @@ class CibilParser
         return null;
     }
 
+    private function nextAccountTypeValue(array $lines, int $index): ?string
+    {
+        $labels = [
+            'Member Name',
+            'Account Type',
+            'Account Number',
+            'Ownership',
+            'Sanctioned Amount',
+            'Current Balance',
+            'Amount Overdue',
+            'Date Opened / Disbursed',
+            'Date Reported And Certified',
+            'Written-off Amount (Total)',
+            'Written-off Amount (Principal)',
+            'Suit - Filed / Willful Default',
+            'Suit - Filed / Wilful Default',
+            'Type of Collateral',
+            'Credit Facility Status',
+            'Settlement Amount',
+            'Payment Start Date',
+            'Payment End Date',
+            'Payment History',
+            'ENQUIRY DETAILS',
+        ];
+        $canonicalLabelSet = [];
+        foreach ($labels as $label) {
+            $canonicalLabelSet[$this->canonicalizeLabel($label)] = true;
+        }
+        $canonicalLabelKeys = array_keys($canonicalLabelSet);
+
+        for ($i = $index + 1; $i < count($lines); $i++) {
+            $candidate = $lines[$i];
+            if ($this->isJunkLine($candidate)) {
+                continue;
+            }
+            if ($this->matchAccountLabel($candidate, $labels) !== null) {
+                return null;
+            }
+            if ($this->isPlaceholderValue($candidate)) {
+                continue;
+            }
+            if (trim($candidate) === '0') {
+                continue;
+            }
+            if ($this->isPageNumberLine($candidate)) {
+                continue;
+            }
+            $candidateKey = $this->canonicalizeLabel($candidate);
+            if ($candidateKey !== '' && isset($canonicalLabelSet[$candidateKey])) {
+                continue;
+            }
+            if ($candidateKey !== '') {
+                $looksLikeLabel = false;
+                foreach ($canonicalLabelKeys as $labelKey) {
+                    if ($labelKey !== '' && str_contains($candidateKey, $labelKey)) {
+                        $looksLikeLabel = true;
+                        break;
+                    }
+                }
+                if ($looksLikeLabel) {
+                    continue;
+                }
+            }
+
+            if ($this->looksLikeMemberNameToken($candidate)) {
+                $next = $this->nextAccountValueFromIndex($lines, $i, $labels, $canonicalLabelSet, $canonicalLabelKeys);
+                if ($next !== null && $this->looksLikeAccountTypeValue($next)) {
+                    return $next;
+                }
+            }
+
+            return $candidate;
+        }
+        return null;
+    }
+
+    private function nextAccountValueFromIndex(
+        array $lines,
+        int $index,
+        array $labels,
+        array $canonicalLabelSet,
+        array $canonicalLabelKeys
+    ): ?string {
+        for ($i = $index + 1; $i < count($lines); $i++) {
+            $candidate = $lines[$i];
+            if ($this->isJunkLine($candidate)) {
+                continue;
+            }
+            if ($this->matchAccountLabel($candidate, $labels) !== null) {
+                return null;
+            }
+            if ($this->isPlaceholderValue($candidate)) {
+                continue;
+            }
+            if (trim($candidate) === '0') {
+                continue;
+            }
+            if ($this->isPageNumberLine($candidate)) {
+                continue;
+            }
+            $candidateKey = $this->canonicalizeLabel($candidate);
+            if ($candidateKey !== '' && isset($canonicalLabelSet[$candidateKey])) {
+                continue;
+            }
+            if ($candidateKey !== '') {
+                $looksLikeLabel = false;
+                foreach ($canonicalLabelKeys as $labelKey) {
+                    if ($labelKey !== '' && str_contains($candidateKey, $labelKey)) {
+                        $looksLikeLabel = true;
+                        break;
+                    }
+                }
+                if ($looksLikeLabel) {
+                    continue;
+                }
+            }
+            return $candidate;
+        }
+        return null;
+    }
+
     private function matchAccountLabel(string $line, array $labels): ?string
     {
         $lineKey = $this->canonicalizeLabel($line);
@@ -2361,6 +2541,23 @@ class CibilParser
             }
         }
         return $value;
+    }
+
+    private function looksLikeMemberNameToken(string $value): bool
+    {
+        $trimmed = trim($value);
+        if ($trimmed === '' || str_contains($trimmed, ' ')) {
+            return false;
+        }
+        return (bool) preg_match('/^[A-Z0-9]{5,}$/', $trimmed);
+    }
+
+    private function looksLikeAccountTypeValue(string $value): bool
+    {
+        return (bool) preg_match(
+            '/\b(loan|card|credit|overdraft|line of credit|mortgage|auto|vehicle|two wheeler|consumer|business|housing|gold|personal)\b/i',
+            $value
+        );
     }
 
     private function nextDateValue(array $lines, int $index): ?string
