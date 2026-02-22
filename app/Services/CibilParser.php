@@ -93,6 +93,9 @@ class CibilParser
             if ($line === '' || str_contains($line, 'myscore.cibil.com')) {
                 continue;
             }
+            if ($this->isHeaderDateTimeLine($line)) {
+                continue;
+            }
             $parts = $this->splitByMarkers($line, $markers);
             foreach ($parts as $part) {
                 $part = trim($part);
@@ -287,15 +290,23 @@ class CibilParser
                 continue;
             }
             if (preg_match('/^ID Number\s+(.+)$/', $line, $m) && $current) {
-                $current['IdNumber'] = $this->normalizeValue($m[1]);
+                if (!$this->isHeaderDateTimeLine($m[1])) {
+                    $current['IdNumber'] = $this->normalizeValue($m[1]);
+                }
                 continue;
             }
             if (preg_match('/^Issue Date\s+(.+)$/', $line, $m) && $current) {
-                $current['IssueDate'] = $this->normalizeValue($m[1]);
+                $value = trim($m[1]);
+                if (!$this->isHeaderDateTimeLine($value) && !in_array($value, ['Issue Date', 'Expiry Date'], true)) {
+                    $current['IssueDate'] = $this->normalizeValue($value);
+                }
                 continue;
             }
             if (preg_match('/^Expiry Date\s+(.+)$/', $line, $m) && $current) {
-                $current['ExpiryDate'] = $this->normalizeValue($m[1]);
+                $value = trim($m[1]);
+                if (!$this->isHeaderDateTimeLine($value) && !in_array($value, ['Issue Date', 'Expiry Date'], true)) {
+                    $current['ExpiryDate'] = $this->normalizeValue($value);
+                }
                 continue;
             }
 
@@ -319,21 +330,21 @@ class CibilParser
             }
             if ($line === 'ID Number' && $current) {
                 $value = $this->nextIdentificationValue($lines, $i);
-                if ($value !== null) {
+                if ($value !== null && !$this->isHeaderDateTimeLine($value)) {
                     $current['IdNumber'] = $this->normalizeValue($value);
                 }
                 continue;
             }
             if ($line === 'Issue Date' && $current) {
                 $value = $this->nextIdentificationValue($lines, $i);
-                if ($value !== null) {
+                if ($value !== null && !$this->isHeaderDateTimeLine($value) && !in_array(trim($value), ['Issue Date', 'Expiry Date'], true)) {
                     $current['IssueDate'] = $this->normalizeValue($value);
                 }
                 continue;
             }
             if ($line === 'Expiry Date' && $current) {
                 $value = $this->nextIdentificationValue($lines, $i);
-                if ($value !== null) {
+                if ($value !== null && !$this->isHeaderDateTimeLine($value) && !in_array(trim($value), ['Issue Date', 'Expiry Date'], true)) {
                     $current['ExpiryDate'] = $this->normalizeValue($value);
                 }
                 continue;
@@ -354,6 +365,9 @@ class CibilParser
         for ($i = $index + 1; $i < count($lines); $i++) {
             $candidate = $lines[$i];
             if ($this->isJunkLine($candidate) || $this->isPageNumberLine($candidate)) {
+                continue;
+            }
+            if ($this->isHeaderDateTimeLine($candidate)) {
                 continue;
             }
             if (in_array($candidate, $labels, true)) {
@@ -546,7 +560,7 @@ class CibilParser
             }
             if (preg_match('/^Telephone Number\s+(?!Type\b)(.+)$/i', $line, $m)) {
                 $number = trim($m[1]);
-                if ($currentType && $number !== '') {
+                if ($currentType && $number !== '' && !$this->isHeaderDateTimeLine($number)) {
                     $telephones[] = [
                         'Sequence' => (string) $sequence++,
                         'Number' => $number,
@@ -565,6 +579,9 @@ class CibilParser
             }
             if ($expectNumber && $currentType) {
                 if ($this->isJunkLine($line)) {
+                    continue;
+                }
+                if ($this->isHeaderDateTimeLine($line)) {
                     continue;
                 }
                 if (!preg_match('/^\d{6,}$/', preg_replace('/\D+/', '', $line))) {
@@ -1303,11 +1320,13 @@ class CibilParser
             if ($label === 'Enquiry Purpose' && isset($lines[$i + 1])) {
                 $inline = $this->inlineValueForLabel($line, 'Enquiry Purpose');
                 if ($inline !== null) {
-                    $current['EnquiryPurpose'] = $inline;
+                    if (!$this->isHeaderDateTimeLine($inline)) {
+                        $current['EnquiryPurpose'] = $inline;
+                    }
                     continue;
                 }
                 $value = $this->nextEnquiryValue($lines, $i);
-                if ($value !== null) {
+                if ($value !== null && !$this->isHeaderDateTimeLine($value)) {
                     $current['EnquiryPurpose'] = $value;
                 }
                 continue;
@@ -1353,6 +1372,9 @@ class CibilParser
             if ($this->isPageNumberLine($candidate)) {
                 continue;
             }
+            if ($this->isHeaderDateTimeLine($candidate)) {
+                continue;
+            }
             if ($this->matchLabel($candidate, $labels) !== null) {
                 return null;
             }
@@ -1372,6 +1394,9 @@ class CibilParser
             if ($this->isJunkLine($candidate) || $this->isPageNumberLine($candidate)) {
                 continue;
             }
+            if ($this->isHeaderDateTimeLine($candidate)) {
+                continue;
+            }
             if ($this->matchLabel($candidate, $labels) !== null) {
                 return null;
             }
@@ -1389,6 +1414,9 @@ class CibilParser
         for ($i = $index + 1; $i < count($lines); $i++) {
             $candidate = $lines[$i];
             if ($this->isJunkLine($candidate) || $this->isPageNumberLine($candidate)) {
+                continue;
+            }
+            if ($this->isHeaderDateTimeLine($candidate)) {
                 continue;
             }
             if ($this->matchLabel($candidate, $labels) !== null) {
@@ -1655,12 +1683,22 @@ class CibilParser
         return (bool) preg_match('/\d{1,2}\/\d{1,2}\/\d{2},\s*\d{1,2}:\d{2}\s*[AP]M/i', $line);
     }
 
+    private function isDateTimeToken(string $value): bool
+    {
+        return (bool) preg_match('/\d{1,2}\/\d{1,2}\/\d{2}\s*,?\s*\d{1,2}:\d{2}\s*[AP]M/i', $value);
+    }
+
     private function isDateOrDateTimeLine(string $line): bool
     {
         if ($this->isDateTimeLine($line)) {
             return true;
         }
         return (bool) preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $line);
+    }
+
+    private function isHeaderDateTimeLine(string $line): bool
+    {
+        return $this->isDateTimeLine($line);
     }
 
     private function findLineIndex(array $lines, int $startIndex, string $value): int
@@ -2304,6 +2342,9 @@ class CibilParser
     private function sanitizeAccountValue(?string $value, array $labels): ?string
     {
         if ($value === null) {
+            return null;
+        }
+        if ($this->isHeaderDateTimeLine($value) || $this->isDateTimeToken($value)) {
             return null;
         }
         $candidateKey = $this->canonicalizeLabel($value);
