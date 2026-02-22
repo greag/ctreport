@@ -410,26 +410,29 @@ class CibilParser
                 if ($this->isPageNumberLine($line)) {
                     continue;
                 }
-                if ($line === 'Category' && isset($lines[$i + 1])) {
-                    $next = $lines[$i + 1];
-                    if (!$this->isPageNumberLine($next) && !$this->isJunkLine($next)) {
+                if ($line === 'Category') {
+                    $next = $this->nextAddressValue($lines, $i);
+                    if ($next !== null) {
                         $current['Type'] = $next;
-                    }
-                    $i++;
-                    continue;
-                }
-                if ($line === 'Residence Code' && isset($lines[$i + 1])) {
-                    $next = $lines[$i + 1];
-                    if ($next !== 'Date Reported' && !$this->isPageNumberLine($next) && !$this->isJunkLine($next)) {
-                        $current['ResidenceCode'] = $next;
-                        $i++;
+                        $i = $this->findLineIndex($lines, $i + 1, $next);
                         continue;
                     }
                 }
-                if ($line === 'Date Reported' && isset($lines[$i + 1])) {
-                    $current['DateReported'] = $lines[$i + 1];
-                    $i++;
-                    continue;
+                if ($line === 'Residence Code') {
+                    $next = $this->nextAddressValue($lines, $i);
+                    if ($next !== null) {
+                        $current['ResidenceCode'] = $next;
+                        $i = $this->findLineIndex($lines, $i + 1, $next);
+                        continue;
+                    }
+                }
+                if ($line === 'Date Reported') {
+                    $next = $this->nextAddressValue($lines, $i, true);
+                    if ($next !== null) {
+                        $current['DateReported'] = $next;
+                        $i = $this->findLineIndex($lines, $i + 1, $next);
+                        continue;
+                    }
                 }
                 $inline = $line;
                 if (preg_match('/Category\s+(.+?)(?=Residence Code|Date Reported|$)/i', $inline, $m)) {
@@ -1614,6 +1617,34 @@ class CibilParser
     {
         $line = preg_replace('/\s+\d{1,2}\/\d{2}\s*$/', '', $line);
         return trim($line);
+    }
+
+    private function nextAddressValue(array $lines, int $index, bool $dateOnly = false): ?string
+    {
+        for ($i = $index + 1; $i < count($lines); $i++) {
+            $candidate = $lines[$i];
+            if ($candidate === '--- PAGE BREAK ---' || $this->isPageNumberLine($candidate) || $this->isJunkLine($candidate)) {
+                continue;
+            }
+            if (in_array($candidate, ['Category', 'Residence Code', 'Date Reported'], true)) {
+                return null;
+            }
+            if ($dateOnly && !preg_match('/\d{2}\/\d{2}\/\d{4}/', $candidate)) {
+                return null;
+            }
+            return $candidate;
+        }
+        return null;
+    }
+
+    private function findLineIndex(array $lines, int $startIndex, string $value): int
+    {
+        for ($i = $startIndex; $i < count($lines); $i++) {
+            if ($lines[$i] === $value) {
+                return $i;
+            }
+        }
+        return $startIndex - 1;
     }
 
     private function applyValidation(array &$payload): void
