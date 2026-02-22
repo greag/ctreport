@@ -26,8 +26,8 @@ return [
     ],
 
     'mobile_api' => [
-        'base_url' => env('MOBILE_API_BASE_URL'),
-        'key' => env('MOBILE_API_KEY'),
+        'base_url' => env('MOBILE_LOOKUP_BASE_URL', env('MOBILE_API_BASE_URL')),
+        'key' => env('MOBILE_LOOKUP_API_KEY', env('MOBILE_API_KEY')),
     ],
 
     'ses' => [
