@@ -4,6 +4,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UiController;
 use App\Http\Controllers\OtpAuthController;
 use App\Http\Controllers\EmployeeDirectoryController;
+use App\Models\EmployeeDirectory;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +25,22 @@ Route::post('/logout', [OtpAuthController::class, 'logout'])->name('otp.logout')
 
 Route::middleware('otp.auth')->group(function () {
     Route::get('/', [UiController::class, 'index']);
+    Route::get('/session-check', function (Illuminate\Http\Request $request) {
+        $phone = (string) $request->session()->get('otp_phone', '');
+        $isAdmin = false;
+        if ($phone !== '') {
+            $isAdmin = EmployeeDirectory::query()
+                ->where('mobile_number', $phone)
+                ->where('is_active', true)
+                ->where('is_admin', true)
+                ->exists();
+        }
+        return response()->json([
+            'otp_authenticated' => (bool) $request->session()->get('otp_authenticated', false),
+            'otp_phone' => $phone,
+            'is_admin' => $isAdmin,
+        ]);
+    });
     Route::get('/reports', [ReportController::class, 'index']);
     Route::get('/reports/{reportId}', [ReportController::class, 'show']);
     Route::get('/employees', [EmployeeDirectoryController::class, 'index'])->name('employees.index');
