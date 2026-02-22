@@ -410,6 +410,9 @@ class CibilParser
                 if ($this->isPageNumberLine($line)) {
                     continue;
                 }
+                if ($this->isDateOrDateTimeLine($line)) {
+                    continue;
+                }
                 if ($line === 'Category') {
                     $next = $this->nextAddressValue($lines, $i);
                     if ($next !== null) {
@@ -1615,6 +1618,9 @@ class CibilParser
 
     private function normalizeAddressLine(string $line): string
     {
+        if ($this->isDateOrDateTimeLine($line)) {
+            return '';
+        }
         $line = preg_replace('/\s+\d{1,2}\/\d{2}\s*$/', '', $line);
         return trim($line);
     }
@@ -1629,12 +1635,32 @@ class CibilParser
             if (in_array($candidate, ['Category', 'Residence Code', 'Date Reported'], true)) {
                 return null;
             }
-            if ($dateOnly && !preg_match('/\d{2}\/\d{2}\/\d{4}/', $candidate)) {
+            if ($dateOnly) {
+                if ($this->isDateTimeLine($candidate)) {
+                    continue;
+                }
+                if (!preg_match('/\d{2}\/\d{2}\/\d{4}/', $candidate)) {
+                    return null;
+                }
+            } else if ($this->isDateOrDateTimeLine($candidate)) {
                 return null;
             }
             return $candidate;
         }
         return null;
+    }
+
+    private function isDateTimeLine(string $line): bool
+    {
+        return (bool) preg_match('/\d{1,2}\/\d{1,2}\/\d{2},\s*\d{1,2}:\d{2}\s*[AP]M/i', $line);
+    }
+
+    private function isDateOrDateTimeLine(string $line): bool
+    {
+        if ($this->isDateTimeLine($line)) {
+            return true;
+        }
+        return (bool) preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $line);
     }
 
     private function findLineIndex(array $lines, int $startIndex, string $value): int
