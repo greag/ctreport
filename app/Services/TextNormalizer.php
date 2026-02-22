@@ -15,6 +15,9 @@ class TextNormalizer
             if ($line === '') {
                 continue;
             }
+            if ($this->isHeaderDateTimeLine($line)) {
+                continue;
+            }
             if ($this->isPageNumberLine($line)) {
                 continue;
             }
@@ -63,5 +66,10 @@ class TextNormalizer
     private function isPageNumberLine(string $line): bool
     {
         return (bool) preg_match('/^\d{1,2}\/\d{2}$/', trim($line));
+    }
+
+    private function isHeaderDateTimeLine(string $line): bool
+    {
+        return (bool) preg_match('/^\d{1,2}\/\d{1,2}\/\d{2},\s*\d{1,2}:\d{2}\s*[AP]M$/i', $line);
     }
 }
