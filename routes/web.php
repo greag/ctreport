@@ -48,3 +48,10 @@ Route::middleware('otp.auth')->group(function () {
     Route::post('/employees/{employee}/toggle', [EmployeeDirectoryController::class, 'toggle'])->name('employees.toggle');
     Route::post('/employees/{employee}/toggle-admin', [EmployeeDirectoryController::class, 'toggleAdmin'])->name('employees.toggleAdmin');
 });
+
+Route::middleware(['otp.auth', 'otp.admin'])->group(function () {
+    Route::get('/process/{token}/text', [\App\Http\Controllers\ConversionController::class, 'downloadText']);
+    Route::get('/process/{token}/json', [\App\Http\Controllers\ConversionController::class, 'downloadJson']);
+    Route::get('/process/{token}/xlsx', [\App\Http\Controllers\ConversionController::class, 'downloadExcel']);
+    Route::get('/process/{token}/validate', [\App\Http\Controllers\ConversionController::class, 'validateResult']);
+});

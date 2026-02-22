@@ -144,7 +144,7 @@
         </div>
 
         <script>
-            const apiBaseUrl = @json($apiBaseUrl);
+            const apiBaseUrl = window.location.origin;
             const userIdInput = document.getElementById('user-id');
             const mobileNumberInput = document.getElementById('mobile-number');
             const reportTypeInput = document.getElementById('report-type');
@@ -270,13 +270,13 @@
 
             const updateDownloads = (tokenValue) => {
                 if (downloadTxt) {
-                    downloadTxt.href = `${apiBaseUrl}/api/process/${tokenValue}/text`;
+                    downloadTxt.href = `${apiBaseUrl}/process/${tokenValue}/text`;
                 }
                 if (downloadJson) {
-                    downloadJson.href = `${apiBaseUrl}/api/process/${tokenValue}/json`;
+                    downloadJson.href = `${apiBaseUrl}/process/${tokenValue}/json`;
                 }
                 if (downloadXlsx) {
-                    downloadXlsx.href = `${apiBaseUrl}/api/process/${tokenValue}/xlsx`;
+                    downloadXlsx.href = `${apiBaseUrl}/process/${tokenValue}/xlsx`;
                 }
             };
 
