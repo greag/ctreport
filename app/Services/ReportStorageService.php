@@ -130,7 +130,7 @@ class ReportStorageService
             $reportId = $existing['report_id'] ?? null;
             $creditRow = [
                 'user_id' => $userId,
-                'credit_score' => $this->numOrNull($reportInfo['Score'] ?? null),
+                'credit_score' => $this->numOrNull($reportInfo['Score'] ?? null) ?? 0,
                 'generated_at' => $this->dateOrNull($reportInfo['ReportDate'] ?? null) ?? now(),
                 'report_order_number' => $reportInfo['ControlNumber'] ?? null,
                 'score_type' => $reportType,
@@ -268,11 +268,19 @@ class ReportStorageService
         $phones = $input['IDAndContactInfo']['ContactInformation']['Telephones'] ?? [];
         $rows = [];
         foreach ($phones as $phone) {
+            $rawNumber = (string) ($phone['Number'] ?? '');
+            $digits = preg_replace('/\D+/', '', $rawNumber);
+            if ($digits === '') {
+                continue;
+            }
+            if (strlen($digits) > 15) {
+                $digits = substr($digits, -15);
+            }
             $rows[] = [
                 'report_id' => $reportId,
                 'seq' => $phone['Sequence'] ?? null,
                 'type_code' => $this->normalizePhoneTypeCode($phone['Type'] ?? null),
-                'number' => $phone['Number'] ?? null,
+                'number' => $digits,
             ];
         }
         if ($rows) {
