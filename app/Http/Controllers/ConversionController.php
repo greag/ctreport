@@ -91,6 +91,9 @@ class ConversionController extends Controller
         $token = (string) Str::uuid();
         $meta = [
             'fileName' => $baseFileName,
+            'upload' => [
+                'path' => $path,
+            ],
             'failedAccounts' => $result['failedAccounts'],
             'structuredData' => $result['structuredData'],
             'storage' => [
@@ -99,6 +102,7 @@ class ConversionController extends Controller
                 'control_number' => (string) $controlNumber,
                 'user_id' => $userId,
                 'mobile_number' => $validated['mobile_number'] ?? null,
+                'upload_path' => $path,
             ],
         ];
 

@@ -209,7 +209,7 @@ class ReportStorageService
                 'seq' => $id['Sequence'] ?? null,
                 'type_of_document' => $id['IdentificationType'] ?? null,
                 'id_number' => $id['IdNumber'] ?? null,
-                'reported_date' => $this->dateOrNull($id['IssueDate'] ?? null),
+                'reported_date' => $this->dateOrNull($id['ReportedDate'] ?? null),
                 'added_at' => now(),
             ];
         }

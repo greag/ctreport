@@ -50,8 +50,8 @@
                                     <th class="py-2 pr-4">Control #</th>
                                     <th class="py-2 pr-4">Report Type</th>
                                     <th class="py-2 pr-4">Score</th>
-                                    <th class="py-2 pr-4">Report Date</th>
-                                    <th class="py-2 pr-4"></th>
+                                    <th class="py-2 pr-4">Processed Date</th>
+                                    <th class="py-2 pr-4">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -63,9 +63,27 @@
                                         <td class="py-2 pr-4">{{ $row->report_order_number }}</td>
                                         <td class="py-2 pr-4">{{ $row->score_type }}</td>
                                         <td class="py-2 pr-4">{{ $row->credit_score }}</td>
-                                        <td class="py-2 pr-4">{{ $row->generated_at }}</td>
+                                        @php
+                                            $processedAt = $row->generated_at;
+                                            if ($processedAt) {
+                                                try {
+                                                    $processedAt = \Carbon\Carbon::parse($processedAt)->format('d/m/Y H:i');
+                                                } catch (\Exception $e) {
+                                                    $processedAt = $row->generated_at;
+                                                }
+                                            }
+                                        @endphp
+                                        <td class="py-2 pr-4">{{ $processedAt }}</td>
                                         <td class="py-2 pr-4">
-                                            <a class="text-indigo-600 hover:text-indigo-500" href="/reports/{{ $row->report_id }}">View</a>
+                                            <div class="flex items-center gap-3">
+                                                <a class="text-indigo-600 hover:text-indigo-500" href="/reports/{{ $row->report_id }}">View</a>
+                                                @if(!empty($isAdmin))
+                                                    <form method="POST" action="/reports/{{ $row->report_id }}/delete" onsubmit="return confirm('Delete this report? This cannot be undone.');">
+                                                        @csrf
+                                                        <button type="submit" class="text-red-600 hover:text-red-500">Delete</button>
+                                                    </form>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -85,6 +103,17 @@
                         <div class="text-sm text-slate-600">
                             <div>User ID: {{ $report->user_id }}</div>
                             <div>Mobile: {{ $report->mobile_number }}</div>
+                            @php
+                                $reportProcessedAt = $report->generated_at;
+                                if ($reportProcessedAt) {
+                                    try {
+                                        $reportProcessedAt = \Carbon\Carbon::parse($reportProcessedAt)->format('d/m/Y H:i');
+                                    } catch (\Exception $e) {
+                                        $reportProcessedAt = $report->generated_at;
+                                    }
+                                }
+                            @endphp
+                            <div>Processed: {{ $reportProcessedAt }}</div>
                         </div>
                     </div>
 
@@ -108,7 +137,7 @@
                     <div class="tab-panel" id="tab-report">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                             <div><span class="font-semibold">Score:</span> {{ $report->credit_score }}</div>
-                            <div><span class="font-semibold">Report Date:</span> {{ $report->generated_at }}</div>
+                            <div><span class="font-semibold">Processed Date:</span> {{ $reportProcessedAt }}</div>
                             <div><span class="font-semibold">Report Type:</span> {{ $report->score_type }}</div>
                             <div><span class="font-semibold">Control Number:</span> {{ $report->report_order_number }}</div>
                         </div>

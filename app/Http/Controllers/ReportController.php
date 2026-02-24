@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use App\Models\EmployeeDirectory;
 
 class ReportController extends Controller
 {
@@ -45,6 +47,7 @@ class ReportController extends Controller
             'results' => $results,
             'report' => null,
             'sections' => [],
+            'isAdmin' => $this->isAdminUser($request),
         ]);
     }
 
@@ -279,6 +282,103 @@ class ReportController extends Controller
             'sections' => $sections,
             'historyByAccount' => $historyByAccount,
             'accountById' => $accountById,
+            'isAdmin' => $this->isAdminUser(request()),
         ]);
+    }
+
+    public function destroy(Request $request, string $reportId)
+    {
+        $fileMeta = $this->findResultFiles((string) $reportId);
+
+        DB::transaction(function () use ($reportId) {
+            $tables = [
+                'cir_personal_info',
+                'cir_identity_info',
+                'cir_address_info',
+                'cir_phone_info',
+                'cir_email_info',
+                'cir_other_key_ind',
+                'cir_enquires',
+                'cir_history_48_months',
+                'cir_retail_account_details',
+            ];
+
+            foreach ($tables as $table) {
+                if (DB::getSchemaBuilder()->hasTable($table)) {
+                    DB::table($table)->where('report_id', $reportId)->delete();
+                }
+            }
+
+            DB::table('credit_reports')->where('report_id', $reportId)->delete();
+        });
+
+        $this->deleteResultFiles($fileMeta);
+
+        return redirect('/reports')->with('status', 'Report deleted.');
+    }
+
+    private function isAdminUser(Request $request): bool
+    {
+        $phone = (string) $request->session()->get('otp_phone', '');
+        if ($phone === '') {
+            return false;
+        }
+        return EmployeeDirectory::query()
+            ->where('mobile_number', $phone)
+            ->where('is_active', true)
+            ->where('is_admin', true)
+            ->exists();
+    }
+
+    private function findResultFiles(string $reportId): array
+    {
+        $matches = [];
+        foreach (Storage::files('results') as $path) {
+            if (!str_ends_with($path, '.json') || str_contains($path, '_validation.json')) {
+                continue;
+            }
+            $meta = json_decode(Storage::get($path), true);
+            if (!is_array($meta)) {
+                continue;
+            }
+            $storage = $meta['storage'] ?? [];
+            $storedReportId = (string) ($storage['report_id'] ?? '');
+            if ($storedReportId !== $reportId) {
+                continue;
+            }
+            $token = pathinfo($path, PATHINFO_FILENAME);
+            $matches[] = [
+                'token' => $token,
+                'file_name' => (string) ($meta['fileName'] ?? ''),
+                'upload_path' => (string) (($meta['upload']['path'] ?? '') ?: ($storage['upload_path'] ?? '')),
+            ];
+        }
+
+        return $matches;
+    }
+
+    private function deleteResultFiles(array $matches): void
+    {
+        foreach ($matches as $meta) {
+            $token = $meta['token'] ?? '';
+            if ($token !== '') {
+                Storage::delete("results/{$token}.json");
+                Storage::delete("results/{$token}.txt");
+                Storage::delete("results/{$token}_validation.json");
+            }
+
+            $fileName = trim((string) ($meta['file_name'] ?? ''));
+            if ($fileName !== '') {
+                $excel = "results/{$fileName}_Extracted_Info.xlsx";
+                if (Storage::exists($excel)) {
+                    Storage::delete($excel);
+                }
+            }
+
+            $uploadPath = trim((string) ($meta['upload_path'] ?? ''));
+            if ($uploadPath !== '') {
+                Storage::delete($uploadPath);
+            }
+        }
     }
 }

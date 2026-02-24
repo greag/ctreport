@@ -212,13 +212,21 @@ class CibilParser
                 return $m[1];
             }
         }
-        foreach ($lines as $line) {
+        for ($i = 0; $i < count($lines); $i++) {
+            $line = $lines[$i];
             if (preg_match('/^Date Of Birth\s+(\d{2}\/\d{2}\/\d{4})$/i', $line, $m)) {
                 return $m[1];
             }
             if (preg_match('/^Date Of Birth\s+(.+)$/i', $line, $m)) {
                 $value = trim($m[1]);
                 $date = $this->extractDateFromLine($value);
+                if ($date !== null) {
+                    return $date;
+                }
+            }
+            if (strcasecmp($line, 'Date Of Birth') === 0) {
+                $next = $this->nextPersonalValue($lines, $i);
+                $date = $next !== null ? $this->extractDateFromLine($next) : null;
                 if ($date !== null) {
                     return $date;
                 }
@@ -234,12 +242,44 @@ class CibilParser
                 return $m[2];
             }
         }
-        foreach ($lines as $line) {
+        for ($i = 0; $i < count($lines); $i++) {
+            $line = $lines[$i];
             if (preg_match('/^Gender\s+(Male|Female|Other)$/i', $line, $m)) {
                 return $m[1];
             }
+            if (strcasecmp($line, 'Gender') === 0) {
+                $next = $this->nextPersonalValue($lines, $i);
+                if ($next !== null && preg_match('/^(Male|Female|Other)$/i', $next, $m)) {
+                    return $m[1];
+                }
+            }
         }
         return 'N/A';
+    }
+
+    private function nextPersonalValue(array $lines, int $index): ?string
+    {
+        $labels = [
+            'PERSONAL DETAILS',
+            'Name',
+            'Date Of Birth',
+            'Gender',
+            'IDENTIFICATION DETAILS',
+        ];
+        for ($i = $index + 1; $i < count($lines); $i++) {
+            $candidate = $lines[$i];
+            if ($this->isJunkLine($candidate) || $this->isPageNumberLine($candidate)) {
+                continue;
+            }
+            if ($this->isHeaderDateTimeLine($candidate)) {
+                continue;
+            }
+            if (in_array($candidate, $labels, true)) {
+                return null;
+            }
+            return $candidate;
+        }
+        return null;
     }
 
     private function extractPan(array $lines): string
