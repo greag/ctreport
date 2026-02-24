@@ -1797,7 +1797,10 @@ class CibilParser
 
     private function isHeaderDateTimeLine(string $line): bool
     {
-        return $this->isDateTimeLine($line);
+        if ($this->isDateTimeLine($line)) {
+            return true;
+        }
+        return (bool) preg_match('/\b\d{1,2}\/\d{1,2}\/\d{2,4},\s*\d{1,2}:\d{2}(?:\s*[AP]M)?\s*CIBIL Report\b/i', $line);
     }
 
     private function findLineIndex(array $lines, int $startIndex, string $value): int
@@ -2365,6 +2368,9 @@ class CibilParser
             if ($this->isJunkLine($candidate)) {
                 continue;
             }
+            if ($this->isHeaderDateTimeLine($candidate)) {
+                continue;
+            }
             if ($this->matchAccountLabel($candidate, $labels) !== null) {
                 return null;
             }
@@ -2433,6 +2439,9 @@ class CibilParser
             if ($this->isJunkLine($candidate)) {
                 continue;
             }
+            if ($this->isHeaderDateTimeLine($candidate)) {
+                continue;
+            }
             if ($this->matchAccountLabel($candidate, $labels) !== null) {
                 return null;
             }
@@ -2484,6 +2493,9 @@ class CibilParser
         for ($i = $index + 1; $i < count($lines); $i++) {
             $candidate = $lines[$i];
             if ($this->isJunkLine($candidate)) {
+                continue;
+            }
+            if ($this->isHeaderDateTimeLine($candidate)) {
                 continue;
             }
             if ($this->matchAccountLabel($candidate, $labels) !== null) {
