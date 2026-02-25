@@ -28,6 +28,7 @@ class ReportController extends Controller
                 'credit_reports.generated_at',
                 'users.mobile_number',
             ])
+            ->orderByDesc('credit_reports.generated_at')
             ->orderByDesc('credit_reports.report_id');
 
         if ($filters['mobile_number'] !== '') {

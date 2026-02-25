@@ -69,7 +69,9 @@
                                             $processedAt = $row->generated_at;
                                             if ($processedAt) {
                                                 try {
-                                                    $processedAt = \Carbon\Carbon::parse($processedAt)->format('d/m/Y H:i');
+                                                    $processedAt = \Carbon\Carbon::parse($processedAt)
+                                                        ->setTimezone(config('app.timezone'))
+                                                        ->format('d/m/Y H:i');
                                                 } catch (\Exception $e) {
                                                     $processedAt = $row->generated_at;
                                                 }
@@ -109,7 +111,9 @@
                                 $reportProcessedAt = $report->generated_at;
                                 if ($reportProcessedAt) {
                                     try {
-                                        $reportProcessedAt = \Carbon\Carbon::parse($reportProcessedAt)->format('d/m/Y H:i');
+                                        $reportProcessedAt = \Carbon\Carbon::parse($reportProcessedAt)
+                                            ->setTimezone(config('app.timezone'))
+                                            ->format('d/m/Y H:i');
                                     } catch (\Exception $e) {
                                         $reportProcessedAt = $report->generated_at;
                                     }
