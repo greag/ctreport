@@ -645,6 +645,7 @@ class CibilParser
         $emails = [];
         $inEmail = false;
         $sequence = 1;
+        $seen = [];
         foreach ($lines as $index => $line) {
             if ($line === 'EMAIL DETAILS') {
                 $inEmail = true;
@@ -670,10 +671,14 @@ class CibilParser
                 if ($value === null) {
                     continue;
                 }
-                $emails[] = [
-                    'Sequence' => (string) $sequence++,
-                    'EmailAddress' => $value,
-                ];
+                $normalized = strtolower($value);
+                if (!isset($seen[$normalized])) {
+                    $emails[] = [
+                        'Sequence' => (string) $sequence++,
+                        'EmailAddress' => $value,
+                    ];
+                    $seen[$normalized] = true;
+                }
                 for ($i = $index + 2; $i < count($lines); $i++) {
                     $candidate = $lines[$i];
                     if ($candidate === 'EMPLOYMENT DETAILS' || stripos($candidate, 'Email ID') !== false) {
@@ -683,10 +688,14 @@ class CibilParser
                         continue;
                     }
                     if (filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
-                        $emails[] = [
-                            'Sequence' => (string) $sequence++,
-                            'EmailAddress' => $candidate,
-                        ];
+                        $normalized = strtolower($candidate);
+                        if (!isset($seen[$normalized])) {
+                            $emails[] = [
+                                'Sequence' => (string) $sequence++,
+                                'EmailAddress' => $candidate,
+                            ];
+                            $seen[$normalized] = true;
+                        }
                         continue;
                     }
                     break;
@@ -694,10 +703,14 @@ class CibilParser
                 continue;
             }
             if (filter_var($line, FILTER_VALIDATE_EMAIL)) {
-                $emails[] = [
-                    'Sequence' => (string) $sequence++,
-                    'EmailAddress' => $line,
-                ];
+                $normalized = strtolower($line);
+                if (!isset($seen[$normalized])) {
+                    $emails[] = [
+                        'Sequence' => (string) $sequence++,
+                        'EmailAddress' => $line,
+                    ];
+                    $seen[$normalized] = true;
+                }
             }
         }
         return $emails;
