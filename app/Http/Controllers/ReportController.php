@@ -27,6 +27,8 @@ class ReportController extends Controller
                 'credit_reports.credit_score',
                 'credit_reports.generated_at',
                 'users.mobile_number',
+                'users.first_name',
+                'users.last_name',
             ])
             ->orderByDesc('credit_reports.generated_at')
             ->orderByDesc('credit_reports.report_id');
