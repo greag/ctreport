@@ -139,7 +139,6 @@
             </main>
 
             <footer class="text-center mt-10 text-sm text-slate-500">
-                <p>Powered by Ghostscript + Tesseract</p>
             </footer>
         </div>
 

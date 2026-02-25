@@ -64,29 +64,13 @@ class ConversionController extends Controller
 
         if ($controlNumber !== '') {
             $existing = $storage->findExistingReport($reportType, (string) $controlNumber);
-            if ($existing && !$overwrite) {
-                return response()->json([
-                    'message' => 'Report already exists for this report type and control number.',
-                    'existing' => $existing,
-                    'report_type' => $reportType,
-                    'control_number' => (string) $controlNumber,
-                    'user_id' => $userId,
-                    'mobile_number' => $validated['mobile_number'] ?? null,
-                ], 409);
+            if ($existing && !empty($existing['report_id'])) {
+                $this->deleteResultFiles($this->findResultFiles((string) $existing['report_id']));
+                $overwrite = true;
             }
         }
 
         $storeResult = $storage->storeReport($result['structuredData'], $userId, $reportType, $overwrite);
-        if (($storeResult['status'] ?? '') === 'duplicate') {
-            return response()->json([
-                'message' => 'Report already exists for this report type and control number.',
-                'existing' => $storeResult['existing'] ?? null,
-                'report_type' => $reportType,
-                'control_number' => (string) $controlNumber,
-                'user_id' => $userId,
-                'mobile_number' => $validated['mobile_number'] ?? null,
-            ], 409);
-        }
 
         $token = (string) Str::uuid();
         $meta = [
@@ -211,5 +195,57 @@ class ConversionController extends Controller
         $name = preg_replace('/\s+/', '_', $name);
         $name = preg_replace('/[^A-Za-z0-9_\-]/', '', $name);
         return $name ?: 'Customer';
+    }
+
+    private function findResultFiles(string $reportId): array
+    {
+        $matches = [];
+        foreach (Storage::files('results') as $path) {
+            if (!str_ends_with($path, '.json') || str_contains($path, '_validation.json')) {
+                continue;
+            }
+            $meta = json_decode(Storage::get($path), true);
+            if (!is_array($meta)) {
+                continue;
+            }
+            $storage = $meta['storage'] ?? [];
+            $storedReportId = (string) ($storage['report_id'] ?? '');
+            if ($storedReportId !== $reportId) {
+                continue;
+            }
+            $token = pathinfo($path, PATHINFO_FILENAME);
+            $matches[] = [
+                'token' => $token,
+                'file_name' => (string) ($meta['fileName'] ?? ''),
+                'upload_path' => (string) (($meta['upload']['path'] ?? '') ?: ($storage['upload_path'] ?? '')),
+            ];
+        }
+
+        return $matches;
+    }
+
+    private function deleteResultFiles(array $matches): void
+    {
+        foreach ($matches as $meta) {
+            $token = $meta['token'] ?? '';
+            if ($token !== '') {
+                Storage::delete("results/{$token}.json");
+                Storage::delete("results/{$token}.txt");
+                Storage::delete("results/{$token}_validation.json");
+            }
+
+            $fileName = trim((string) ($meta['file_name'] ?? ''));
+            if ($fileName !== '') {
+                $excel = "results/{$fileName}_Extracted_Info.xlsx";
+                if (Storage::exists($excel)) {
+                    Storage::delete($excel);
+                }
+            }
+
+            $uploadPath = trim((string) ($meta['upload_path'] ?? ''));
+            if ($uploadPath !== '') {
+                Storage::delete($uploadPath);
+            }
+        }
     }
 }

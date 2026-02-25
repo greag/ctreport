@@ -15,19 +15,7 @@ class TextNormalizer
             if ($line === '') {
                 continue;
             }
-            if ($this->isHeaderDateTimeLine($line)) {
-                continue;
-            }
-            if ($this->isPageNumberLine($line)) {
-                continue;
-            }
-            if (str_contains($line, 'myscore.cibil.com')) {
-                continue;
-            }
-            if (str_contains($line, 'Score Report')) {
-                continue;
-            }
-            if (str_contains($line, 'Cibil Dashboard')) {
+            if ($this->isHeaderFooterLine($line)) {
                 continue;
             }
             $out[] = $this->injectSectionMarkers($line);
@@ -70,6 +58,34 @@ class TextNormalizer
 
     private function isHeaderDateTimeLine(string $line): bool
     {
-        return (bool) preg_match('/^\d{1,2}\/\d{1,2}\/\d{2},\s*\d{1,2}:\d{2}\s*[AP]M$/i', $line);
+        if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{2},\s*\d{1,2}:\d{2}\s*[AP]M$/i', $line)) {
+            return true;
+        }
+        return (bool) preg_match('/^\d{1,2}\/\d{1,2}\/\d{2,4},\s*\d{1,2}:\d{2}(?:\s*[AP]M)?\s*CIBIL Report$/i', $line);
+    }
+
+    private function isHeaderFooterLine(string $line): bool
+    {
+        if ($this->isHeaderDateTimeLine($line) || $this->isPageNumberLine($line)) {
+            return true;
+        }
+        $tokens = [
+            'CIBIL Report',
+            'Score Report',
+            'Cibil Dashboard',
+            'CIBIL Score & Report',
+            'myscore.cibil.com',
+            '/CreditView/',
+            'COPYRIGHT',
+            'TRANSUNION CIBIL',
+            'ALL RIGHTS RESERVED',
+            'For more information, please visit',
+        ];
+        foreach ($tokens as $token) {
+            if (stripos($line, $token) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 }

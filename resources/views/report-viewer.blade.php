@@ -16,26 +16,28 @@
                 <a href="/" class="text-indigo-600 hover:text-indigo-500 font-medium">Back to Upload</a>
             </header>
 
-            <form method="GET" action="/reports" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Mobile Number</label>
-                        <input name="mobile_number" value="{{ $filters['mobile_number'] }}" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter mobile number" />
+            @if(!$report)
+                <form method="GET" action="/reports" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Mobile Number</label>
+                            <input name="mobile_number" value="{{ $filters['mobile_number'] }}" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter mobile number" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">User ID</label>
+                            <input name="user_id" value="{{ $filters['user_id'] }}" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter user ID" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Control Number</label>
+                            <input name="control_number" value="{{ $filters['control_number'] }}" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter control number" />
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">User ID</label>
-                        <input name="user_id" value="{{ $filters['user_id'] }}" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter user ID" />
+                    <div class="mt-4 flex gap-3">
+                        <button class="px-5 py-2 bg-indigo-600 text-white rounded-md">Search</button>
+                        <a href="/reports" class="px-5 py-2 border border-slate-300 rounded-md">Clear</a>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Control Number</label>
-                        <input name="control_number" value="{{ $filters['control_number'] }}" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter control number" />
-                    </div>
-                </div>
-                <div class="mt-4 flex gap-3">
-                    <button class="px-5 py-2 bg-indigo-600 text-white rounded-md">Search</button>
-                    <a href="/reports" class="px-5 py-2 border border-slate-300 rounded-md">Clear</a>
-                </div>
-            </form>
+                </form>
+            @endif
 
             @if(count($results))
                 <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">

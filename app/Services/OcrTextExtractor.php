@@ -339,13 +339,21 @@ class OcrTextExtractor
     private function parseBboxHtml(string $html): array
     {
         $pages = [];
-        if (!preg_match_all('/<page\b[^>]*>(.*?)<\/page>/s', $html, $pageMatches)) {
+        if (!preg_match_all('/<page\b([^>]*)>(.*?)<\/page>/s', $html, $pageMatches, PREG_SET_ORDER)) {
             return $pages;
         }
 
-        foreach ($pageMatches[1] as $pageHtml) {
+        foreach ($pageMatches as $pageMatch) {
+            $pageAttrs = $pageMatch[1] ?? '';
+            $pageHtml = $pageMatch[2] ?? '';
+            $height = null;
+            if (preg_match('/\bheight="([^"]+)"/', $pageAttrs, $m)) {
+                $height = (float) $m[1];
+            }
             $words = $this->parseBboxWords($pageHtml);
-            $pages[] = $this->buildLinesFromWords($words);
+            $lines = $this->buildLinesFromWordsWithMeta($words);
+            $lines = $this->filterLinesByHeaderFooter($lines, $height);
+            $pages[] = $this->renderLines($lines);
         }
 
         return $pages;
@@ -377,7 +385,7 @@ class OcrTextExtractor
         return $words;
     }
 
-    private function buildLinesFromWords(array $words): string
+    private function buildLinesFromWordsWithMeta(array $words): array
     {
         $lines = [];
         $lineTolerance = 2.5;
@@ -410,7 +418,10 @@ class OcrTextExtractor
         $prevY = null;
         foreach ($lines as $line) {
             if ($prevY !== null && ($line['y'] - $prevY) > 12) {
-                $output[] = '';
+                $output[] = [
+                    'y' => $line['y'],
+                    'text' => '',
+                ];
             }
             $prevY = $line['y'];
 
@@ -430,10 +441,90 @@ class OcrTextExtractor
                 $lineText .= $word['text'];
                 $prevXMax = $word['xMax'];
             }
-            $output[] = $lineText;
+            $output[] = [
+                'y' => $line['y'],
+                'text' => $lineText,
+            ];
         }
 
-        return trim(implode("\n", $output));
+        return $output;
+    }
+
+    private function filterLinesByHeaderFooter(array $lines, ?float $pageHeight): array
+    {
+        if (!$pageHeight || $pageHeight <= 0) {
+            return $lines;
+        }
+
+        $headerCut = $pageHeight * 0.12;
+        $footerCut = $pageHeight * 0.88;
+        $filtered = [];
+
+        foreach ($lines as $line) {
+            $text = trim((string) ($line['text'] ?? ''));
+            if ($text === '') {
+                $filtered[] = $line;
+                continue;
+            }
+            $y = (float) ($line['y'] ?? 0);
+            $inHeaderFooter = ($y <= $headerCut) || ($y >= $footerCut);
+            if ($inHeaderFooter && $this->isHeaderFooterLine($text)) {
+                continue;
+            }
+            if ($inHeaderFooter && $this->isPageNumberLine($text)) {
+                continue;
+            }
+            $filtered[] = $line;
+        }
+
+        return $filtered;
+    }
+
+    private function renderLines(array $lines): string
+    {
+        $out = [];
+        foreach ($lines as $line) {
+            $out[] = $line['text'] ?? '';
+        }
+        return trim(implode("\n", $out));
+    }
+
+    private function isHeaderFooterLine(string $line): bool
+    {
+        if ($this->isHeaderDateTimeLine($line)) {
+            return true;
+        }
+        $tokens = [
+            'CIBIL Report',
+            'Score Report',
+            'Cibil Dashboard',
+            'CIBIL Score & Report',
+            'myscore.cibil.com',
+            '/CreditView/',
+            'COPYRIGHT',
+            'TRANSUNION CIBIL',
+            'ALL RIGHTS RESERVED',
+            'For more information, please visit',
+        ];
+        foreach ($tokens as $token) {
+            if (stripos($line, $token) !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function isPageNumberLine(string $line): bool
+    {
+        return (bool) preg_match('/^\d{1,2}\/\d{2}$/', trim($line));
+    }
+
+    private function isHeaderDateTimeLine(string $line): bool
+    {
+        if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{2},\s*\d{1,2}:\d{2}\s*[AP]M$/i', $line)) {
+            return true;
+        }
+        return (bool) preg_match('/^\d{1,2}\/\d{1,2}\/\d{2,4},\s*\d{1,2}:\d{2}(?:\s*[AP]M)?\s*CIBIL Report$/i', $line);
     }
 
     private function formatTextForOutput(string $text): string

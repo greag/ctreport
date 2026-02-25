@@ -1658,7 +1658,31 @@ class CibilParser
             || str_contains($line, 'Score Report')
             || str_contains($line, 'Cibil Dashboard')
             || str_contains($line, 'myscore.cibil.com')
-            || str_contains($line, '/CreditView/');
+            || str_contains($line, '/CreditView/')
+            || $this->isHeaderFooterToken($line);
+    }
+
+    private function isHeaderFooterToken(string $line): bool
+    {
+        if ($this->isHeaderDateTimeLine($line) || $this->isDateTimeToken($line)) {
+            return true;
+        }
+        $tokens = [
+            'CIBIL Report',
+            'CIBIL Score & Report',
+            'Score Report',
+            'Cibil Dashboard',
+            'COPYRIGHT',
+            'TRANSUNION CIBIL',
+            'ALL RIGHTS RESERVED',
+            'For more information, please visit',
+        ];
+        foreach ($tokens as $token) {
+            if (stripos($line, $token) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function isHistoryLegendLine(string $line): bool
@@ -1828,6 +1852,37 @@ class CibilParser
         $this->validateScoreAndControl($payload);
         $this->validateEnquiries($payload);
         $this->validatePaymentHistory($payload);
+        $this->validateHeaderFooterLeaks($payload);
+    }
+
+    private function validateHeaderFooterLeaks(array $payload): void
+    {
+        $maxWarnings = 30;
+        $warnings = 0;
+
+        $scan = function ($value, string $path) use (&$scan, &$warnings, $maxWarnings) {
+            if ($warnings >= $maxWarnings) {
+                return;
+            }
+            if (is_string($value)) {
+                if ($this->isHeaderFooterToken($value)) {
+                    $this->addWarning($path . ' contains header/footer text: ' . $value);
+                    $warnings++;
+                }
+                return;
+            }
+            if (is_array($value)) {
+                foreach ($value as $key => $item) {
+                    $nextPath = is_int($key) ? "{$path}[{$key}]" : "{$path}.{$key}";
+                    $scan($item, $nextPath);
+                    if ($warnings >= $maxWarnings) {
+                        return;
+                    }
+                }
+            }
+        };
+
+        $scan($payload, 'InputResponse');
     }
 
     private function validateReportInfo(array &$payload): void
@@ -2576,7 +2631,7 @@ class CibilParser
         if ($value === null) {
             return null;
         }
-        if ($this->isHeaderDateTimeLine($value) || $this->isDateTimeToken($value)) {
+        if ($this->isHeaderFooterToken($value) || $this->isHeaderDateTimeLine($value) || $this->isDateTimeToken($value)) {
             return null;
         }
         $candidateKey = $this->canonicalizeLabel($value);
