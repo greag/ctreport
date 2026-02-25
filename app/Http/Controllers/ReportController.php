@@ -19,6 +19,7 @@ class ReportController extends Controller
 
         $query = DB::table('credit_reports')
             ->leftJoin('users', 'credit_reports.user_id', '=', 'users.user_id')
+            ->leftJoin('employee_directory', 'users.mobile_number', '=', 'employee_directory.mobile_number')
             ->select([
                 'credit_reports.report_id',
                 'credit_reports.user_id',
@@ -27,8 +28,7 @@ class ReportController extends Controller
                 'credit_reports.credit_score',
                 'credit_reports.generated_at',
                 'users.mobile_number',
-                'users.first_name',
-                'users.last_name',
+                'employee_directory.name as employee_name',
             ])
             ->orderByDesc('credit_reports.generated_at')
             ->orderByDesc('credit_reports.report_id');

@@ -66,10 +66,7 @@
                                         <td class="py-2 pr-4">{{ $row->user_id }}</td>
                                         <td class="py-2 pr-4">{{ $row->mobile_number }}</td>
                                         @if(!empty($isAdmin))
-                                            @php
-                                                $fullName = trim(($row->first_name ?? '') . ' ' . ($row->last_name ?? ''));
-                                            @endphp
-                                            <td class="py-2 pr-4">{{ $fullName !== '' ? $fullName : 'N/A' }}</td>
+                                            <td class="py-2 pr-4">{{ $row->employee_name ?? 'N/A' }}</td>
                                         @endif
                                         <td class="py-2 pr-4">{{ $row->report_order_number }}</td>
                                         <td class="py-2 pr-4">{{ $row->score_type }}</td>
