@@ -19,7 +19,13 @@ class ReportController extends Controller
 
         $query = DB::table('credit_reports')
             ->leftJoin('users', 'credit_reports.user_id', '=', 'users.user_id')
-            ->leftJoin('employee_directory', 'users.mobile_number', '=', 'employee_directory.mobile_number')
+            ->leftJoin('employee_directory', function ($join) {
+                $join->on(
+                    DB::raw("CONVERT(users.mobile_number USING utf8mb4) COLLATE utf8mb4_unicode_ci"),
+                    '=',
+                    DB::raw("CONVERT(employee_directory.mobile_number USING utf8mb4) COLLATE utf8mb4_unicode_ci")
+                );
+            })
             ->select([
                 'credit_reports.report_id',
                 'credit_reports.user_id',
