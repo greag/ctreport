@@ -656,8 +656,17 @@ class CibilParser
             if (!$inEmail) {
                 continue;
             }
-            if ($line === 'Email ID' && isset($lines[$index + 1])) {
-                $value = $this->nextEmailValue($lines, $index);
+            if ($this->isJunkLine($line) || $this->isPageNumberLine($line)) {
+                continue;
+            }
+            if (stripos($line, 'Email ID') !== false) {
+                $inline = trim(str_ireplace('Email ID', '', $line));
+                $value = null;
+                if ($inline !== '' && filter_var($inline, FILTER_VALIDATE_EMAIL)) {
+                    $value = $inline;
+                } elseif (isset($lines[$index + 1])) {
+                    $value = $this->nextEmailValue($lines, $index);
+                }
                 if ($value === null) {
                     continue;
                 }
@@ -667,7 +676,7 @@ class CibilParser
                 ];
                 for ($i = $index + 2; $i < count($lines); $i++) {
                     $candidate = $lines[$i];
-                    if ($candidate === 'EMPLOYMENT DETAILS' || $candidate === 'Email ID') {
+                    if ($candidate === 'EMPLOYMENT DETAILS' || stripos($candidate, 'Email ID') !== false) {
                         break;
                     }
                     if ($this->isJunkLine($candidate) || $this->isPageNumberLine($candidate)) {
@@ -682,6 +691,13 @@ class CibilParser
                     }
                     break;
                 }
+                continue;
+            }
+            if (filter_var($line, FILTER_VALIDATE_EMAIL)) {
+                $emails[] = [
+                    'Sequence' => (string) $sequence++,
+                    'EmailAddress' => $line,
+                ];
             }
         }
         return $emails;
