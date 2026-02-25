@@ -861,7 +861,15 @@ class CibilParser
             if ($candidate === 'Email ID' || $candidate === 'EMPLOYMENT DETAILS') {
                 return null;
             }
-            return $candidate;
+            if (filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+                return $candidate;
+            }
+            if ($this->isHeaderFooterToken($candidate) || $this->isHeaderDateTimeLine($candidate)) {
+                continue;
+            }
+            if (stripos($candidate, 'CIBILReport') !== false || stripos($candidate, 'CIBIL Report') !== false) {
+                continue;
+            }
         }
         return null;
     }
