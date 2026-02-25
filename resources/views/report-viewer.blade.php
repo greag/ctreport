@@ -88,6 +88,10 @@
                                             <div class="flex items-center gap-3">
                                                 <a class="text-indigo-600 hover:text-indigo-500" href="/reports/{{ $row->report_id }}">View</a>
                                                 @if(!empty($isAdmin))
+                                                    <form method="POST" action="/reports/{{ $row->report_id }}/reprocess" onsubmit="return confirm('Reprocess this report using the stored PDF?');">
+                                                        @csrf
+                                                        <button type="submit" class="text-slate-700 hover:text-slate-900">Reprocess</button>
+                                                    </form>
                                                     <form method="POST" action="/reports/{{ $row->report_id }}/delete" onsubmit="return confirm('Delete this report? This cannot be undone.');">
                                                         @csrf
                                                         <button type="submit" class="text-red-600 hover:text-red-500">Delete</button>
@@ -126,6 +130,12 @@
                                 }
                             @endphp
                             <div>Processed: {{ $reportProcessedAt }}</div>
+                            @if(!empty($isAdmin))
+                                <form method="POST" action="/reports/{{ $report->report_id }}/reprocess" class="mt-2" onsubmit="return confirm('Reprocess this report using the stored PDF?');">
+                                    @csrf
+                                    <button type="submit" class="text-indigo-600 hover:text-indigo-500">Reprocess Report</button>
+                                </form>
+                            @endif
                         </div>
                     </div>
 

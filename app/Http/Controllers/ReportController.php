@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use App\Services\ReportProcessor;
+use App\Services\ReportStorageService;
 use App\Models\EmployeeDirectory;
 
 class ReportController extends Controller
@@ -326,6 +329,69 @@ class ReportController extends Controller
         return redirect('/reports')->with('status', 'Report deleted.');
     }
 
+    public function reprocess(Request $request, string $reportId, ReportProcessor $processor, ReportStorageService $storage)
+    {
+        $latestMeta = $this->findLatestResultMeta((string) $reportId);
+        if (!$latestMeta) {
+            return redirect('/reports')->with('status', 'No stored result metadata found for this report.');
+        }
+
+        $meta = $latestMeta['meta'];
+        $uploadPath = trim((string) (($meta['upload']['path'] ?? '') ?: ($meta['storage']['upload_path'] ?? '')));
+        if ($uploadPath === '' || !Storage::exists($uploadPath)) {
+            return redirect('/reports')->with('status', 'Stored PDF not found for this report.');
+        }
+
+        $userId = (string) ($meta['storage']['user_id'] ?? '');
+        if ($userId === '') {
+            $userId = (string) (DB::table('credit_reports')->where('report_id', $reportId)->value('user_id') ?? '');
+        }
+        if ($userId === '') {
+            return redirect('/reports')->with('status', 'Unable to resolve user for this report.');
+        }
+
+        $reportType = trim((string) ($meta['storage']['report_type'] ?? ''));
+        if ($reportType === '') {
+            $reportType = (string) (DB::table('credit_reports')->where('report_id', $reportId)->value('score_type') ?? 'CIBIL');
+        }
+
+        try {
+            $result = $processor->process(storage_path('app/' . $uploadPath), null, $userId);
+        } catch (\Exception $e) {
+            return redirect('/reports')->with('status', 'Reprocess failed: ' . $e->getMessage());
+        }
+
+        $this->deleteResultFiles($this->findResultFiles((string) $reportId), false);
+
+        $storeResult = $storage->storeReport($result['structuredData'], $userId, $reportType, true);
+
+        $token = (string) Str::uuid();
+        $baseFileName = (string) ($meta['fileName'] ?? 'credit_report');
+        $controlNumber = $result['structuredData']['InputResponse']['ReportInformation']['ControlNumber'] ?? '';
+        $newMeta = [
+            'fileName' => $baseFileName,
+            'upload' => [
+                'path' => $uploadPath,
+            ],
+            'failedAccounts' => $result['failedAccounts'],
+            'structuredData' => $result['structuredData'],
+            'storage' => [
+                'report_id' => $storeResult['report_id'] ?? $reportId,
+                'report_type' => $reportType,
+                'control_number' => (string) $controlNumber,
+                'user_id' => $userId,
+                'mobile_number' => $meta['storage']['mobile_number'] ?? null,
+                'upload_path' => $uploadPath,
+            ],
+        ];
+
+        Storage::makeDirectory('results');
+        Storage::put("results/{$token}.json", json_encode($newMeta, JSON_UNESCAPED_UNICODE));
+        Storage::put("results/{$token}.txt", $result['extractedText']);
+
+        return redirect('/reports/' . $reportId)->with('status', 'Report reprocessed.');
+    }
+
     private function isAdminUser(Request $request): bool
     {
         $phone = (string) $request->session()->get('otp_phone', '');
@@ -366,7 +432,7 @@ class ReportController extends Controller
         return $matches;
     }
 
-    private function deleteResultFiles(array $matches): void
+    private function deleteResultFiles(array $matches, bool $deleteUploads = true): void
     {
         foreach ($matches as $meta) {
             $token = $meta['token'] ?? '';
@@ -384,10 +450,41 @@ class ReportController extends Controller
                 }
             }
 
-            $uploadPath = trim((string) ($meta['upload_path'] ?? ''));
-            if ($uploadPath !== '') {
-                Storage::delete($uploadPath);
+            if ($deleteUploads) {
+                $uploadPath = trim((string) ($meta['upload_path'] ?? ''));
+                if ($uploadPath !== '') {
+                    Storage::delete($uploadPath);
+                }
             }
         }
+    }
+
+    private function findLatestResultMeta(string $reportId): ?array
+    {
+        $latest = null;
+        foreach (Storage::files('results') as $path) {
+            if (!str_ends_with($path, '.json') || str_contains($path, '_validation.json')) {
+                continue;
+            }
+            $meta = json_decode(Storage::get($path), true);
+            if (!is_array($meta)) {
+                continue;
+            }
+            $storage = $meta['storage'] ?? [];
+            $storedReportId = (string) ($storage['report_id'] ?? '');
+            if ($storedReportId !== $reportId) {
+                continue;
+            }
+            $modified = Storage::lastModified($path);
+            if (!$latest || $modified > $latest['modified']) {
+                $latest = [
+                    'path' => $path,
+                    'modified' => $modified,
+                    'meta' => $meta,
+                ];
+            }
+        }
+
+        return $latest;
     }
 }
