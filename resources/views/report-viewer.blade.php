@@ -16,6 +16,16 @@
                 <a href="/" class="text-indigo-600 hover:text-indigo-500 font-medium">Back to Upload</a>
             </header>
 
+            @if(session('status'))
+                <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800">
+                    {{ session('status') }}
+                </div>
+            @endif
+
+            <div id="process-status" class="mb-6 hidden rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-indigo-800">
+                Processing report... please wait.
+            </div>
+
             @if(!$report)
                 <form method="GET" action="/reports" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -84,7 +94,7 @@
                                             <div class="flex items-center gap-3">
                                                 <a class="text-indigo-600 hover:text-indigo-500" href="/reports/{{ $row->report_id }}">View</a>
                                                 @if(!empty($isAdmin))
-                                                    <form method="POST" action="/reports/{{ $row->report_id }}/reprocess" onsubmit="return confirm('Reprocess this report using the stored PDF?');">
+                                                    <form method="POST" action="/reports/{{ $row->report_id }}/reprocess" class="reprocess-form" onsubmit="return confirm('Reprocess will overwrite the existing report data. Continue?');">
                                                         @csrf
                                                         <button type="submit" class="text-slate-700 hover:text-slate-900">Reprocess</button>
                                                     </form>
@@ -127,7 +137,7 @@
                             @endphp
                             <div>Processed: {{ $reportProcessedAt }}</div>
                             @if(!empty($isAdmin))
-                                <form method="POST" action="/reports/{{ $report->report_id }}/reprocess" class="mt-2" onsubmit="return confirm('Reprocess this report using the stored PDF?');">
+                                <form method="POST" action="/reports/{{ $report->report_id }}/reprocess" class="mt-2 reprocess-form" onsubmit="return confirm('Reprocess will overwrite the existing report data. Continue?');">
                                     @csrf
                                     <button type="submit" class="text-indigo-600 hover:text-indigo-500">Reprocess Report</button>
                                 </form>
@@ -610,6 +620,22 @@
                 activateTab('history');
                 window.__filterHistory(seq, name || '');
             };
+
+            const processStatus = document.getElementById('process-status');
+            const reprocessForms = Array.from(document.querySelectorAll('.reprocess-form'));
+            reprocessForms.forEach((form) => {
+                form.addEventListener('submit', (event) => {
+                    const btn = form.querySelector('button[type="submit"]');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.textContent = 'Processing...';
+                    }
+                    if (processStatus) {
+                        processStatus.classList.remove('hidden');
+                        processStatus.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            });
         </script>
     </body>
 </html>
