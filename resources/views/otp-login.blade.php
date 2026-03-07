@@ -47,7 +47,7 @@
                 statusLine.classList.toggle('text-slate-600', !isError);
             };
 
-            sendBtn.addEventListener('click', async () => {
+            const sendOtp = async () => {
                 const phone = phoneInput.value.trim();
                 if (!phone) {
                     setStatus('Please enter a mobile number.', true);
@@ -72,9 +72,9 @@
                     return;
                 }
                 setStatus(data.message || 'OTP sent.');
-            });
+            };
 
-            verifyBtn.addEventListener('click', async () => {
+            const verifyOtp = async () => {
                 const phone = phoneInput.value.trim();
                 const otp = otpInput.value.trim();
                 if (!phone || !otp) {
@@ -101,6 +101,23 @@
                 }
 
                 window.location.href = `${apiBaseUrl}/`;
+            };
+
+            sendBtn.addEventListener('click', sendOtp);
+            verifyBtn.addEventListener('click', verifyOtp);
+
+            phoneInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    sendOtp();
+                }
+            });
+
+            otpInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    verifyOtp();
+                }
             });
         </script>
     </body>
