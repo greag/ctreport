@@ -131,7 +131,7 @@ class ReportStorageService
             $creditRow = [
                 'user_id' => $userId,
                 'credit_score' => $this->numOrNull($reportInfo['Score'] ?? null) ?? 0,
-                'generated_at' => $this->dateOrNull($reportInfo['ReportDate'] ?? null) ?? now(),
+                'generated_at' => now(),
                 'report_order_number' => $reportInfo['ControlNumber'] ?? null,
                 'score_type' => $reportType,
                 'json_response' => json_encode($payload, JSON_UNESCAPED_UNICODE),
