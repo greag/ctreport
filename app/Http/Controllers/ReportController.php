@@ -24,9 +24,9 @@ class ReportController extends Controller
             ->leftJoin('users', 'credit_reports.user_id', '=', 'users.user_id')
             ->leftJoin('employee_directory', function ($join) {
                 $join->on(
-                    DB::raw("CONVERT(users.mobile_number USING utf8mb4) COLLATE utf8mb4_unicode_ci"),
+                    DB::raw("REPLACE(REPLACE(REPLACE(CONVERT(credit_reports.processed_by_mobile USING utf8mb4) COLLATE utf8mb4_unicode_ci,'+',''),' ',''),'-','')"),
                     '=',
-                    DB::raw("CONVERT(employee_directory.mobile_number USING utf8mb4) COLLATE utf8mb4_unicode_ci")
+                    DB::raw("REPLACE(REPLACE(REPLACE(CONVERT(employee_directory.mobile_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,'+',''),' ',''),'-','')")
                 );
             })
             ->select([
@@ -36,6 +36,7 @@ class ReportController extends Controller
                 'credit_reports.score_type',
                 'credit_reports.credit_score',
                 'credit_reports.generated_at',
+                'credit_reports.processed_by_mobile',
                 'users.mobile_number',
                 'employee_directory.name as employee_name',
             ])
@@ -363,7 +364,14 @@ class ReportController extends Controller
 
         $this->deleteResultFiles($this->findResultFiles((string) $reportId), false);
 
-        $storeResult = $storage->storeReport($result['structuredData'], $userId, $reportType, true);
+        $processedBy = '';
+        if ($request->hasSession()) {
+            $processedBy = (string) $request->session()->get('otp_phone', '');
+        }
+        if ($processedBy === '') {
+            $processedBy = trim((string) $request->input('processed_by_mobile', ''));
+        }
+        $storeResult = $storage->storeReport($result['structuredData'], $userId, $reportType, true, $processedBy);
 
         $token = (string) Str::uuid();
         $baseFileName = (string) ($meta['fileName'] ?? 'credit_report');

@@ -49,9 +49,7 @@
                                     <th class="py-2 pr-4">Report ID</th>
                                     <th class="py-2 pr-4">User ID</th>
                                     <th class="py-2 pr-4">Mobile</th>
-                                    @if(!empty($isAdmin))
-                                        <th class="py-2 pr-4">Processed By</th>
-                                    @endif
+                                    <th class="py-2 pr-4">Processed By</th>
                                     <th class="py-2 pr-4">Control #</th>
                                     <th class="py-2 pr-4">Report Type</th>
                                     <th class="py-2 pr-4">Score</th>
@@ -65,9 +63,7 @@
                                         <td class="py-2 pr-4">{{ $row->report_id }}</td>
                                         <td class="py-2 pr-4">{{ $row->user_id }}</td>
                                         <td class="py-2 pr-4">{{ $row->mobile_number }}</td>
-                                        @if(!empty($isAdmin))
-                                            <td class="py-2 pr-4">{{ $row->employee_name ?? 'N/A' }}</td>
-                                        @endif
+                                        <td class="py-2 pr-4">{{ $row->employee_name ?? 'N/A' }}</td>
                                         <td class="py-2 pr-4">{{ $row->report_order_number }}</td>
                                         <td class="py-2 pr-4">{{ $row->score_type }}</td>
                                         <td class="py-2 pr-4">{{ $row->credit_score }}</td>

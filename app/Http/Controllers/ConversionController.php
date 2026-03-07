@@ -70,7 +70,14 @@ class ConversionController extends Controller
             }
         }
 
-        $storeResult = $storage->storeReport($result['structuredData'], $userId, $reportType, $overwrite);
+        $processedBy = '';
+        if ($request->hasSession()) {
+            $processedBy = (string) $request->session()->get('otp_phone', '');
+        }
+        if ($processedBy === '') {
+            $processedBy = trim((string) $request->input('processed_by_mobile', ''));
+        }
+        $storeResult = $storage->storeReport($result['structuredData'], $userId, $reportType, $overwrite, $processedBy);
 
         $token = (string) Str::uuid();
         $meta = [

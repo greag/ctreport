@@ -106,7 +106,7 @@ class ReportStorageService
         ];
     }
 
-    public function storeReport(array $payload, string $userId, string $reportType, bool $overwrite): array
+    public function storeReport(array $payload, string $userId, string $reportType, bool $overwrite, ?string $processedByMobile = null): array
     {
         $reportInfo = $payload['InputResponse']['ReportInformation'] ?? [];
         $controlNumber = (string) ($reportInfo['ControlNumber'] ?? '');
@@ -122,7 +122,7 @@ class ReportStorageService
             ];
         }
 
-        $reportId = DB::transaction(function () use ($payload, $userId, $reportType, $existing) {
+        $reportId = DB::transaction(function () use ($payload, $userId, $reportType, $existing, $processedByMobile) {
             $input = $payload['InputResponse'] ?? [];
             $reportInfo = $input['ReportInformation'] ?? [];
             $warnings = $input['Warnings'] ?? [];
@@ -137,6 +137,9 @@ class ReportStorageService
                 'json_response' => json_encode($payload, JSON_UNESCAPED_UNICODE),
                 'warnings_json' => $warnings ? json_encode($warnings, JSON_UNESCAPED_UNICODE) : null,
             ];
+            if ($processedByMobile !== null && trim($processedByMobile) !== '') {
+                $creditRow['processed_by_mobile'] = $processedByMobile;
+            }
 
             if ($reportId) {
                 DB::table('credit_reports')->where('report_id', $reportId)->update($creditRow);

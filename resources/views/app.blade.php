@@ -2,6 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
+        <meta name="csrf-token" content="{{ csrf_token() }}" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Credit Report Analyzer</title>
         <script src="https://cdn.tailwindcss.com"></script>
@@ -144,6 +145,7 @@
 
         <script>
             const apiBaseUrl = window.location.origin;
+            const processedByMobile = @json(session('otp_phone', ''));
             const userIdInput = document.getElementById('user-id');
             const mobileNumberInput = document.getElementById('mobile-number');
             const reportTypeInput = document.getElementById('report-type');
@@ -371,17 +373,23 @@
                 }
                 formData.append('password', passwordInput.value.trim());
                 formData.append('pdf', selectedFile);
+                if (processedByMobile) {
+                    formData.append('processed_by_mobile', processedByMobile);
+                }
                 if (overwrite) {
                     formData.append('overwrite', 'true');
                 }
 
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
                 const response = await fetch(`${apiBaseUrl}/api/process`, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken,
                     },
                     body: formData,
+                    credentials: 'same-origin',
                 });
 
                 if (response.status === 409) {
