@@ -50,6 +50,7 @@ Route::middleware('otp.auth')->group(function () {
 });
 
 Route::middleware(['otp.auth', 'otp.admin'])->group(function () {
+    Route::get('/reports/{reportId}/download-pdf', [ReportController::class, 'downloadPdf'])->name('reports.downloadPdf');
     Route::post('/reports/{reportId}/delete', [ReportController::class, 'destroy'])->name('reports.destroy');
     Route::post('/reports/{reportId}/reprocess', [ReportController::class, 'reprocess'])->name('reports.reprocess');
     Route::get('/process/{token}/text', [\App\Http\Controllers\ConversionController::class, 'downloadText']);

@@ -92,6 +92,9 @@
                                         <td class="py-2 pr-4">{{ $processedAt }}</td>
                                         <td class="py-2 pr-4">
                                             <div class="flex items-center gap-3">
+                                                @if(!empty($isAdmin))
+                                                    <a class="text-slate-700 hover:text-slate-900" href="/reports/{{ $row->report_id }}/download-pdf">Download PDF</a>
+                                                @endif
                                                 <a class="text-indigo-600 hover:text-indigo-500" href="/reports/{{ $row->report_id }}">View</a>
                                                 @if(!empty($isAdmin))
                                                     <form method="POST" action="/reports/{{ $row->report_id }}/reprocess" class="reprocess-form" onsubmit="return confirm('Reprocess will overwrite the existing report data. Continue?');">

@@ -400,6 +400,30 @@ class ReportController extends Controller
         return redirect('/reports/' . $reportId)->with('status', 'Report reprocessed.');
     }
 
+    public function downloadPdf(string $reportId)
+    {
+        $latestMeta = $this->findLatestResultMeta((string) $reportId);
+        if (!$latestMeta) {
+            abort(404, 'Stored PDF not found.');
+        }
+
+        $meta = $latestMeta['meta'];
+        $uploadPath = trim((string) (($meta['upload']['path'] ?? '') ?: ($meta['storage']['upload_path'] ?? '')));
+        if ($uploadPath === '' || !Storage::exists($uploadPath)) {
+            abort(404, 'Stored PDF not found.');
+        }
+
+        $fileName = trim((string) ($meta['fileName'] ?? 'credit_report'));
+        if ($fileName === '') {
+            $fileName = 'credit_report';
+        }
+        $fileName = preg_replace('/\s+/', '_', $fileName);
+        $fileName = preg_replace('/[^A-Za-z0-9_\-]/', '', $fileName);
+        $downloadName = $fileName . '.pdf';
+
+        return Storage::download($uploadPath, $downloadName);
+    }
+
     private function isAdminUser(Request $request): bool
     {
         $phone = (string) $request->session()->get('otp_phone', '');
