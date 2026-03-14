@@ -749,6 +749,47 @@ class CibilParser
                 'Net / Gross Income Indicator',
             ]) ?: $lines[$i];
 
+            $inlineLabel = $this->matchLabel($rawLine, [
+                'Date Reported',
+                'Account Type',
+                'Occupation',
+                'Income',
+                'Monthly / Annual Income Indicator',
+                'Net / Gross Income Indicator',
+            ]);
+            if ($inlineLabel) {
+                $inlineValue = trim(substr($rawLine, strlen($inlineLabel)));
+                if ($inlineValue !== '' && $inlineValue !== $inlineLabel) {
+                    if ($inlineLabel === 'Date Reported') {
+                        $date = $this->extractDateFromLine($inlineValue);
+                        if ($date) {
+                            $employment['DateReported'] = $date;
+                        }
+                        continue;
+                    }
+                    if ($inlineLabel === 'Account Type') {
+                        $employment['AccountType'] = $this->normalizeValue($inlineValue);
+                        continue;
+                    }
+                    if ($inlineLabel === 'Occupation') {
+                        $employment['Occupation'] = $this->normalizeValue($inlineValue);
+                        continue;
+                    }
+                    if ($inlineLabel === 'Income') {
+                        $employment['Income'] = $this->normalizeValue($inlineValue);
+                        continue;
+                    }
+                    if ($inlineLabel === 'Monthly / Annual Income Indicator') {
+                        $employment['MonthlyAnnualIncomeIndicator'] = $this->normalizeValue($inlineValue);
+                        continue;
+                    }
+                    if ($inlineLabel === 'Net / Gross Income Indicator') {
+                        $employment['NetGrossIncomeIndicator'] = $this->normalizeValue($inlineValue);
+                        continue;
+                    }
+                }
+            }
+
             if (str_contains($rawLine, 'Account Type') && str_contains($rawLine, 'Date Reported')) {
                 $valueLine = $this->nextEmploymentValue($lines, $i);
                 if ($valueLine) {
