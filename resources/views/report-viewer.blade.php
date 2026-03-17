@@ -192,6 +192,7 @@
                             <button data-tab="enquiries" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Enquiries</button>
                             <button data-tab="warnings" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Warnings</button>
                             <button data-tab="other" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Other</button>
+                            <button data-tab="summary" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Summary</button>
                         </nav>
                     </div>
 
@@ -624,6 +625,42 @@
                         @else
                             <p class="text-slate-500">No additional data found.</p>
                         @endif
+                    </div>
+
+                    <div class="tab-panel hidden" id="tab-summary">
+                        <div class="mb-4 text-sm text-slate-700">{{ $summary['summary_text'] ?? '' }}</div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div class="rounded-lg border border-slate-200 bg-white p-4">
+                                <div class="text-slate-500">Total Accounts</div>
+                                <div class="text-lg font-semibold">{{ $summary['total_accounts'] ?? 0 }}</div>
+                            </div>
+                            <div class="rounded-lg border border-slate-200 bg-white p-4">
+                                <div class="text-slate-500">Total Outstanding</div>
+                                <div class="text-lg font-semibold">{{ number_format($summary['total_outstanding'] ?? 0, 2) }}</div>
+                            </div>
+                            <div class="rounded-lg border border-slate-200 bg-white p-4">
+                                <div class="text-slate-500">Total Over Due</div>
+                                <div class="text-lg font-semibold">{{ number_format($summary['total_overdue'] ?? 0, 2) }}</div>
+                            </div>
+                        </div>
+                        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            @foreach(['Red','Orange','Yellow','Light Green','Green'] as $color)
+                                <div class="rounded-lg border border-slate-200 bg-white p-4">
+                                    <div class="font-semibold text-slate-700">{{ $color }} Accounts ({{ $summary['color_counts'][$color] ?? 0 }})</div>
+                                    <div class="text-slate-500 mt-2">
+                                        @if(!empty($summary['color_details'][$color]))
+                                            <ul class="list-disc pl-5 space-y-1">
+                                                @foreach($summary['color_details'][$color] as $line)
+                                                    <li>{{ $line }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            None
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
             @endif
