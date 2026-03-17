@@ -11,9 +11,11 @@
             <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
                 <div>
                     <h1 class="text-3xl font-bold text-slate-900">Report Viewer</h1>
-                    <p class="text-slate-600">Search by mobile number.</p>
                 </div>
-                <a href="/" class="text-indigo-600 hover:text-indigo-500 font-medium">Back to Upload</a>
+                <div class="flex flex-col items-start gap-2 md:items-end">
+                    <a href="/" class="text-indigo-600 hover:text-indigo-500 font-medium">Back to Upload</a>
+                    <a href="/reports" class="text-slate-600 hover:text-slate-900 text-sm font-medium">View Existing Report</a>
+                </div>
             </header>
 
             @if(session('status'))
@@ -373,7 +375,7 @@
                                     return $text;
                                 };
                             @endphp
-                            <div class="min-w-full text-sm max-h-[70vh] overflow-y-auto border border-slate-200 rounded-lg">
+                            <div class="min-w-full text-sm border border-slate-200 rounded-lg">
                                 <table class="min-w-full text-sm border-collapse table-fixed">
                                     <thead class="text-left text-slate-600 bg-slate-100 sticky top-0 z-10">
                                         <tr>
