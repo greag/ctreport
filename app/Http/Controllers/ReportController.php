@@ -239,11 +239,24 @@ class ReportController extends Controller
         }
 
         $historyByAccount = [];
+        $latestDpdByAccount = [];
         foreach ($sections['history'] as $row) {
             $historyByAccount[$row->cir_account_id][] = [
                 'key' => $row->key,
                 'status' => $row->payment_status,
             ];
+            $dpd = $this->parseDpdValue($row->payment_status ?? null);
+            $ym = $this->parseHistoryKey($row->key ?? null);
+            if ($dpd !== null && $ym !== null) {
+                $current = $latestDpdByAccount[$row->cir_account_id] ?? null;
+                if (!$current || $ym['year'] > $current['year'] || ($ym['year'] === $current['year'] && $ym['month'] > $current['month'])) {
+                    $latestDpdByAccount[$row->cir_account_id] = [
+                        'year' => $ym['year'],
+                        'month' => $ym['month'],
+                        'dpd' => $dpd,
+                    ];
+                }
+            }
         }
         if ($sections['history']->count()) {
             $monthMap = [
@@ -278,6 +291,57 @@ class ReportController extends Controller
             $sections['history'] = collect($rows);
         }
 
+        $summary = [
+            'total_accounts' => $sections['accounts']->count(),
+            'total_outstanding' => 0.0,
+            'total_overdue' => 0.0,
+            'color_counts' => [
+                'Red' => 0,
+                'Orange' => 0,
+                'Yellow' => 0,
+                'Green' => 0,
+                'Light Green' => 0,
+            ],
+            'color_accounts' => [
+                'Red' => [],
+                'Orange' => [],
+                'Yellow' => [],
+                'Green' => [],
+                'Light Green' => [],
+            ],
+            'color_details' => [
+                'Red' => [],
+                'Orange' => [],
+                'Yellow' => [],
+                'Green' => [],
+                'Light Green' => [],
+            ],
+            'summary_text' => '',
+        ];
+        foreach ($sections['accounts'] as $row) {
+            $summary['total_outstanding'] += $this->parseAmount($row->balance ?? null);
+            $summary['total_overdue'] += $this->parseAmount($row->amount_overdue_value ?? null);
+
+            $latest = $latestDpdByAccount[$row->cir_account_id] ?? null;
+            $latestDpd = $latest['dpd'] ?? 0;
+            $row->risk_color = $this->classifyAccountColor($row, $latestDpd);
+            $color = $row->risk_color;
+            $summary['color_counts'][$color] = ($summary['color_counts'][$color] ?? 0) + 1;
+            $institution = trim((string) ($row->institution ?? ''));
+            $accountNumber = trim((string) ($row->account_number ?? ''));
+            $labelParts = [];
+            if ($institution !== '') {
+                $labelParts[] = $institution;
+            }
+            if ($accountNumber !== '') {
+                $labelParts[] = $accountNumber;
+            }
+            $label = $labelParts ? implode(' - ', $labelParts) : (string) ($row->seq ?? $row->cir_account_id ?? '');
+            $summary['color_accounts'][$color][] = $label;
+            $summary['color_details'][$color][] = $this->buildAccountReasonLine($row, $label, $latestDpd);
+        }
+        $summary['summary_text'] = $this->buildScopeSummaryText($summary['color_counts'], $summary['color_accounts']);
+
         return view('report-viewer', [
             'filters' => [
                 'mobile_number' => '',
@@ -285,10 +349,168 @@ class ReportController extends Controller
             'results' => [],
             'report' => $report,
             'sections' => $sections,
+            'summary' => $summary,
             'historyByAccount' => $historyByAccount,
             'accountById' => $accountById,
             'isAdmin' => $this->isAdminUser(request()),
         ]);
+    }
+
+    private function classifyAccountColor(object $row, int $maxDpd): string
+    {
+        $accountStatus = strtolower(trim((string) ($row->account_status ?? '')));
+        $overdue = $this->parseAmount($row->amount_overdue_value ?? $row->PastDueAmount ?? null);
+        $balance = $this->parseAmount($row->balance ?? null);
+        $dateClosed = trim((string) ($row->date_closed ?? ''));
+
+        $redStatuses = [
+            'account purchased and restructured',
+            'restructured & closed',
+            'restructured due to covid-19',
+            'restructured due to natural calamity',
+            'restructured loan',
+            'account purchased and written off',
+            'written off and account sold',
+            'written-off',
+            'settled',
+            'auctioned & settled',
+            'repossessed & settled',
+            'post (wo) settled',
+            'post write off closed',
+        ];
+
+        if ($overdue > 0) {
+            return 'Red';
+        }
+        if ($accountStatus !== '' && $accountStatus !== 'n/a') {
+            foreach ($redStatuses as $status) {
+                if (str_contains($accountStatus, $status)) {
+                    return 'Red';
+                }
+            }
+        }
+        if ($maxDpd >= 90) {
+            return 'Red';
+        }
+        if ($maxDpd >= 30 && $maxDpd <= 89) {
+            return 'Orange';
+        }
+        if ($maxDpd >= 1 && $maxDpd <= 29) {
+            return 'Yellow';
+        }
+
+        if (($dateClosed !== '' && strtoupper($dateClosed) !== 'N/A') || str_contains($accountStatus, 'closed')) {
+            if ($balance == 0.0) {
+                return 'Light Green';
+            }
+        }
+
+        return 'Green';
+    }
+
+    private function parseDpdValue($value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+        $text = trim((string) $value);
+        if ($text === '' || strtoupper($text) === 'N/A' || $text === '-' || $text === '--') {
+            return null;
+        }
+        if (preg_match('/\d+/', $text, $m)) {
+            return (int) $m[0];
+        }
+        return 0;
+    }
+
+    private function parseHistoryKey($key): ?array
+    {
+        $key = trim((string) $key);
+        if ($key === '') {
+            return null;
+        }
+        $monthMap = [
+            'jan' => 1, 'feb' => 2, 'mar' => 3, 'apr' => 4, 'may' => 5, 'jun' => 6,
+            'jul' => 7, 'aug' => 8, 'sep' => 9, 'oct' => 10, 'nov' => 11, 'dec' => 12,
+        ];
+        if (preg_match('/^([A-Za-z]{3})\s+(\d{4})$/', $key, $m)) {
+            $month = $monthMap[strtolower($m[1])] ?? null;
+            if ($month) {
+                return ['year' => (int) $m[2], 'month' => (int) $month];
+            }
+        }
+        if (preg_match('/^(\d{2})-(\d{2})$/', $key, $m)) {
+            return ['year' => 2000 + (int) $m[2], 'month' => (int) $m[1]];
+        }
+        if (preg_match('/^(\d{2})-(\d{4})$/', $key, $m)) {
+            return ['year' => (int) $m[2], 'month' => (int) $m[1]];
+        }
+        if (preg_match('/^(\d{4})-(\d{2})$/', $key, $m)) {
+            return ['year' => (int) $m[1], 'month' => (int) $m[2]];
+        }
+        return null;
+    }
+
+    private function buildAccountReasonLine(object $row, string $label, int $latestDpd): string
+    {
+        $parts = [];
+        $overdue = $this->parseAmount($row->amount_overdue_value ?? $row->PastDueAmount ?? null);
+        if ($overdue > 0) {
+            $parts[] = 'has an over due of INR ' . number_format($overdue, 0, '.', '');
+        }
+
+        $status = trim((string) ($row->account_status ?? ''));
+        if ($status !== '' && strtoupper($status) !== 'N/A') {
+            $parts[] = 'is also ' . $status;
+        }
+
+        $suit = trim((string) ($row->suit_filed_status ?? ''));
+        if ($suit !== '' && strtoupper($suit) !== 'N/A') {
+            $parts[] = 'suit filed status ' . $suit;
+        }
+
+        if ($latestDpd > 0) {
+            $parts[] = 'DPD of ' . $latestDpd . ' in the last reporting';
+        }
+
+        if (!$parts) {
+            return $label . ' has no adverse flags.';
+        }
+
+        return $label . ' ' . implode(', ', $parts);
+    }
+
+    private function buildScopeSummaryText(array $counts, array $accounts): string
+    {
+        if (($counts['Red'] ?? 0) > 0) {
+            return 'Critical attention required: red accounts detected.';
+        }
+        if (($counts['Orange'] ?? 0) > 0) {
+            return 'Moderate risk: orange accounts detected.';
+        }
+        if (($counts['Yellow'] ?? 0) > 0) {
+            return 'Low risk: yellow accounts detected.';
+        }
+        if (($counts['Light Green'] ?? 0) > 0 || ($counts['Green'] ?? 0) > 0) {
+            return 'Healthy profile: no red/orange/yellow accounts detected.';
+        }
+        return 'No account classification available.';
+    }
+
+    private function parseAmount($value): float
+    {
+        if ($value === null) {
+            return 0.0;
+        }
+        $text = trim((string) $value);
+        if ($text === '' || strtoupper($text) === 'N/A' || $text === '-' || $text === '--') {
+            return 0.0;
+        }
+        $cleaned = preg_replace('/[^0-9.]/', '', $text);
+        if ($cleaned === '' || $cleaned === '.') {
+            return 0.0;
+        }
+        return (float) $cleaned;
     }
 
     public function destroy(Request $request, string $reportId)
