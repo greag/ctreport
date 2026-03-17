@@ -16,8 +16,6 @@ class ReportController extends Controller
     {
         $filters = [
             'mobile_number' => trim((string) $request->query('mobile_number', '')),
-            'user_id' => trim((string) $request->query('user_id', '')),
-            'control_number' => trim((string) $request->query('control_number', '')),
         ];
 
         $query = DB::table('credit_reports')
@@ -29,15 +27,14 @@ class ReportController extends Controller
                     DB::raw("REPLACE(REPLACE(REPLACE(CONVERT(employee_directory.mobile_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,'+',''),' ',''),'-','')")
                 );
             })
+            ->leftJoin('cir_personal_info', 'credit_reports.report_id', '=', 'cir_personal_info.report_id')
             ->select([
                 'credit_reports.report_id',
-                'credit_reports.user_id',
-                'credit_reports.report_order_number',
                 'credit_reports.score_type',
                 'credit_reports.credit_score',
                 'credit_reports.generated_at',
                 'credit_reports.processed_by_mobile',
-                'users.mobile_number',
+                'cir_personal_info.full_name as customer_name',
                 'employee_directory.name as employee_name',
             ])
             ->orderByDesc('credit_reports.generated_at')
@@ -45,12 +42,6 @@ class ReportController extends Controller
 
         if ($filters['mobile_number'] !== '') {
             $query->where('users.mobile_number', $filters['mobile_number']);
-        }
-        if ($filters['user_id'] !== '') {
-            $query->where('credit_reports.user_id', $filters['user_id']);
-        }
-        if ($filters['control_number'] !== '') {
-            $query->where('credit_reports.report_order_number', $filters['control_number']);
         }
 
         $results = $query->limit(50)->get();
@@ -287,8 +278,6 @@ class ReportController extends Controller
         return view('report-viewer', [
             'filters' => [
                 'mobile_number' => '',
-                'user_id' => '',
-                'control_number' => '',
             ],
             'results' => [],
             'report' => $report,

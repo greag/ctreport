@@ -11,7 +11,7 @@
             <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
                 <div>
                     <h1 class="text-3xl font-bold text-slate-900">Report Viewer</h1>
-                    <p class="text-slate-600">Search by mobile number, user ID, or control number.</p>
+                    <p class="text-slate-600">Search by mobile number.</p>
                 </div>
                 <a href="/" class="text-indigo-600 hover:text-indigo-500 font-medium">Back to Upload</a>
             </header>
@@ -28,18 +28,10 @@
 
             @if(!$report)
                 <form method="GET" action="/reports" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-2">Mobile Number</label>
                             <input name="mobile_number" value="{{ $filters['mobile_number'] }}" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter mobile number" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">User ID</label>
-                            <input name="user_id" value="{{ $filters['user_id'] }}" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter user ID" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Control Number</label>
-                            <input name="control_number" value="{{ $filters['control_number'] }}" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter control number" />
                         </div>
                     </div>
                     <div class="mt-4 flex gap-3">
@@ -57,10 +49,8 @@
                             <thead class="text-left text-slate-500">
                                 <tr>
                                     <th class="py-2 pr-4">Report ID</th>
-                                    <th class="py-2 pr-4">User ID</th>
-                                    <th class="py-2 pr-4">Mobile</th>
+                                    <th class="py-2 pr-4">Customer Name</th>
                                     <th class="py-2 pr-4">Processed By</th>
-                                    <th class="py-2 pr-4">Control #</th>
                                     <th class="py-2 pr-4">Report Type</th>
                                     <th class="py-2 pr-4">Score</th>
                                     <th class="py-2 pr-4">Processed Date</th>
@@ -71,10 +61,8 @@
                                 @foreach($results as $row)
                                     <tr class="border-t border-slate-100">
                                         <td class="py-2 pr-4">{{ $row->report_id }}</td>
-                                        <td class="py-2 pr-4">{{ $row->user_id }}</td>
-                                        <td class="py-2 pr-4">{{ $row->mobile_number }}</td>
+                                        <td class="py-2 pr-4">{{ $row->customer_name ?? 'N/A' }}</td>
                                         <td class="py-2 pr-4">{{ $row->employee_name ?? 'N/A' }}</td>
-                                        <td class="py-2 pr-4">{{ $row->report_order_number }}</td>
                                         <td class="py-2 pr-4">{{ $row->score_type }}</td>
                                         <td class="py-2 pr-4">{{ $row->credit_score }}</td>
                                         @php
