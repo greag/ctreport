@@ -51,6 +51,9 @@ Route::middleware('otp.auth')->group(function () {
 
 Route::middleware(['otp.auth', 'otp.admin'])->group(function () {
     Route::get('/reports/{reportId}/download-pdf', [ReportController::class, 'downloadPdf'])->name('reports.downloadPdf');
+    Route::get('/reports/{reportId}/download-text', [ReportController::class, 'downloadText'])->name('reports.downloadText');
+    Route::get('/reports/{reportId}/download-json', [ReportController::class, 'downloadJson'])->name('reports.downloadJson');
+    Route::get('/reports/{reportId}/download-excel', [ReportController::class, 'downloadExcel'])->name('reports.downloadExcel');
     Route::post('/reports/{reportId}/delete', [ReportController::class, 'destroy'])->name('reports.destroy');
     Route::post('/reports/{reportId}/reprocess', [ReportController::class, 'reprocess'])->name('reports.reprocess');
     Route::get('/process/{token}/text', [\App\Http\Controllers\ConversionController::class, 'downloadText']);

@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\ExcelExporter;
 use App\Services\ReportProcessor;
 use App\Services\ReportStorageService;
 use App\Models\EmployeeDirectory;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
@@ -413,6 +416,52 @@ class ReportController extends Controller
         return Storage::download($uploadPath, $downloadName);
     }
 
+    public function downloadText(string $reportId)
+    {
+        $latestMeta = $this->findLatestResultMeta((string) $reportId);
+        if (!$latestMeta) {
+            abort(404, 'Stored text not found.');
+        }
+        $token = pathinfo($latestMeta['path'], PATHINFO_FILENAME);
+        $textPath = "results/{$token}.txt";
+        if (!Storage::exists($textPath)) {
+            abort(404, 'Stored text not found.');
+        }
+        $downloadName = $this->buildDownloadName($latestMeta['meta'], 'txt');
+
+        return response()->download(Storage::path($textPath), $downloadName, ['Content-Type' => 'text/plain']);
+    }
+
+    public function downloadJson(string $reportId)
+    {
+        $latestMeta = $this->findLatestResultMeta((string) $reportId);
+        if (!$latestMeta) {
+            abort(404, 'Stored JSON not found.');
+        }
+        $payload = $latestMeta['meta']['structuredData'] ?? [];
+        $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $downloadName = $this->buildDownloadName($latestMeta['meta'], 'json');
+
+        return response($json, 200, [
+            'Content-Type' => 'application/json',
+            'Content-Disposition' => 'attachment; filename="' . $downloadName . '"',
+        ]);
+    }
+
+    public function downloadExcel(string $reportId, ExcelExporter $exporter): StreamedResponse|BinaryFileResponse
+    {
+        $latestMeta = $this->findLatestResultMeta((string) $reportId);
+        if (!$latestMeta) {
+            abort(404, 'Stored Excel data not found.');
+        }
+        $payload = $latestMeta['meta']['structuredData']['InputResponse'] ?? [];
+        $fileName = $latestMeta['meta']['fileName'] ?? 'credit_report';
+        $tempPath = $exporter->createExcel($payload, $fileName);
+        $downloadName = $this->buildDownloadName($latestMeta['meta'], 'xlsx');
+
+        return response()->download($tempPath, $downloadName)->deleteFileAfterSend(true);
+    }
+
     private function isAdminUser(Request $request): bool
     {
         $phone = (string) $request->session()->get('otp_phone', '');
@@ -478,6 +527,29 @@ class ReportController extends Controller
                 }
             }
         }
+    }
+
+    private function buildDownloadName(array $meta, string $extension): string
+    {
+        $name = $this->extractCustomerName($meta);
+        $timestamp = now()->format('Ymd_His');
+        return "{$name}_{$timestamp}.{$extension}";
+    }
+
+    private function extractCustomerName(array $meta): string
+    {
+        $name = $meta['structuredData']['InputResponse']['PersonalInformation']['Name']
+            ?? $meta['fileName']
+            ?? 'Customer';
+
+        $name = trim((string) $name);
+        if ($name === '') {
+            $name = 'Customer';
+        }
+
+        $name = preg_replace('/\s+/', '_', $name);
+        $name = preg_replace('/[^A-Za-z0-9_\-]/', '', $name);
+        return $name ?: 'Customer';
     }
 
     private function findLatestResultMeta(string $reportId): ?array

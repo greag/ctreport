@@ -83,17 +83,60 @@
                                         <td class="py-2 pr-4">
                                             <div class="flex items-center gap-3">
                                                 @if(!empty($isAdmin))
-                                                    <a class="text-slate-700 hover:text-slate-900" href="/reports/{{ $row->report_id }}/download-pdf">Download PDF</a>
+                                                    <a class="text-slate-600 hover:text-slate-900" href="/reports/{{ $row->report_id }}/download-text" title="Download Text" aria-label="Download Text">
+                                                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M4 4h16v16H4z"/>
+                                                            <path d="M7 8h10M7 12h10M7 16h6"/>
+                                                        </svg>
+                                                    </a>
+                                                    <a class="text-slate-600 hover:text-slate-900" href="/reports/{{ $row->report_id }}/download-json" title="Download JSON" aria-label="Download JSON">
+                                                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M4 4h16v16H4z"/>
+                                                            <path d="M8 8c-2 0-2 2-2 4s0 4 2 4"/>
+                                                            <path d="M16 8c2 0 2 2 2 4s0 4-2 4"/>
+                                                            <path d="M12 8v8"/>
+                                                        </svg>
+                                                    </a>
+                                                    <a class="text-slate-600 hover:text-slate-900" href="/reports/{{ $row->report_id }}/download-excel" title="Download Excel" aria-label="Download Excel">
+                                                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M4 4h16v16H4z"/>
+                                                            <path d="M9 8l6 8M15 8l-6 8"/>
+                                                        </svg>
+                                                    </a>
+                                                    <a class="text-slate-600 hover:text-slate-900" href="/reports/{{ $row->report_id }}/download-pdf" title="Download PDF" aria-label="Download PDF">
+                                                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                            <path d="M7 10l5 5 5-5"/>
+                                                            <path d="M12 15V3"/>
+                                                        </svg>
+                                                    </a>
                                                 @endif
-                                                <a class="text-indigo-600 hover:text-indigo-500" href="/reports/{{ $row->report_id }}">View</a>
+                                                <a class="text-indigo-600 hover:text-indigo-500" href="/reports/{{ $row->report_id }}" title="View" aria-label="View">
+                                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+                                                        <circle cx="12" cy="12" r="3"/>
+                                                    </svg>
+                                                </a>
                                                 @if(!empty($isAdmin))
                                                     <form method="POST" action="/reports/{{ $row->report_id }}/reprocess" class="reprocess-form" onsubmit="return confirm('Reprocess will overwrite the existing report data. Continue?');">
                                                         @csrf
-                                                        <button type="submit" class="text-slate-700 hover:text-slate-900">Reprocess</button>
+                                                        <button type="submit" class="text-slate-600 hover:text-slate-900" title="Reprocess" aria-label="Reprocess">
+                                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+                                                                <path d="M21 3v6h-6"/>
+                                                            </svg>
+                                                        </button>
                                                     </form>
                                                     <form method="POST" action="/reports/{{ $row->report_id }}/delete" onsubmit="return confirm('Delete this report? This cannot be undone.');">
                                                         @csrf
-                                                        <button type="submit" class="text-red-600 hover:text-red-500">Delete</button>
+                                                        <button type="submit" class="text-red-600 hover:text-red-500" title="Delete" aria-label="Delete">
+                                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M3 6h18"/>
+                                                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                                                <path d="M10 11v6M14 11v6"/>
+                                                            </svg>
+                                                        </button>
                                                     </form>
                                                 @endif
                                             </div>
