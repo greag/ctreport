@@ -460,7 +460,9 @@ class ReportController extends Controller
         }
 
         $status = trim((string) ($row->account_status ?? ''));
+        $statusPartIndex = null;
         if ($status !== '' && strtoupper($status) !== 'N/A') {
+            $statusPartIndex = count($parts);
             $parts[] = 'is also ' . $status;
         }
 
@@ -475,6 +477,10 @@ class ReportController extends Controller
 
         if (!$parts) {
             return $label . ' has no adverse flags.';
+        }
+
+        if (count($parts) === 1 && $statusPartIndex === 0) {
+            $parts[0] = 'is ' . $status;
         }
 
         return $label . ' ' . implode(', ', $parts);
