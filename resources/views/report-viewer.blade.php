@@ -139,12 +139,9 @@
                     <div class="border-b border-slate-200 mb-4">
                         <nav class="flex flex-wrap gap-3 text-sm" id="tab-nav">
                             <button data-tab="report" class="tab-btn px-3 py-2 rounded-md bg-indigo-600 text-white">Report Info</button>
-                            <button data-tab="personal" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Personal</button>
                             <button data-tab="identifications" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Identifications</button>
                             <button data-tab="addresses" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Addresses</button>
                             <button data-tab="phones" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Phones</button>
-                            <button data-tab="emails" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Emails</button>
-                            <button data-tab="employment" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Employment</button>
                             <button data-tab="accounts" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Accounts</button>
                             <button data-tab="history" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Payment History</button>
                             <button data-tab="enquiries" class="tab-btn px-3 py-2 rounded-md bg-slate-100">Enquiries</button>
@@ -159,6 +156,46 @@
                             <div><span class="font-semibold">Processed Date:</span> {{ $reportProcessedAt }}</div>
                             <div><span class="font-semibold">Report Type:</span> {{ $report->score_type }}</div>
                             <div><span class="font-semibold">Control Number:</span> {{ $report->report_order_number }}</div>
+                        </div>
+                        <div class="mt-6">
+                            <h3 class="text-sm font-semibold text-slate-700 mb-3">Personal Details</h3>
+                            @if($sections['personal'])
+                                @php
+                                    $dobValue = $sections['personal']->date_of_birth ?? null;
+                                    $dobDisplay = $dobValue ?: 'N/A';
+                                    if ($dobValue) {
+                                        try {
+                                            $dobDisplay = \Carbon\Carbon::parse($dobValue)->format('d/m/Y');
+                                        } catch (\Exception $e) {
+                                            $dobDisplay = $dobValue;
+                                        }
+                                    }
+                                @endphp
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    <div><span class="font-semibold">Name:</span> {{ $sections['personal']->full_name ?: 'N/A' }}</div>
+                                    <div><span class="font-semibold">DOB:</span> {{ $dobDisplay }}</div>
+                                    <div><span class="font-semibold">Gender:</span> {{ $sections['personal']->gender ?: 'N/A' }}</div>
+                                    <div><span class="font-semibold">Occupation:</span> {{ $sections['personal']->occupation ?: 'N/A' }}</div>
+                                </div>
+                            @else
+                                <p class="text-sm text-slate-500">No personal info found.</p>
+                            @endif
+                        </div>
+
+                        <div class="mt-6">
+                            <h3 class="text-sm font-semibold text-slate-700 mb-3">Employment Details</h3>
+                            @if($sections['employment'])
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    <div><span class="font-semibold">Account Type:</span> {{ $sections['employment']['AccountType'] ?? 'N/A' }}</div>
+                                    <div><span class="font-semibold">Date Reported:</span> {{ $sections['employment']['DateReported'] ?? 'N/A' }}</div>
+                                    <div><span class="font-semibold">Occupation:</span> {{ $sections['employment']['Occupation'] ?? 'N/A' }}</div>
+                                    <div><span class="font-semibold">Income:</span> {{ $sections['employment']['Income'] ?? 'N/A' }}</div>
+                                    <div><span class="font-semibold">Monthly/Annual:</span> {{ $sections['employment']['MonthlyAnnualIncomeIndicator'] ?? 'N/A' }}</div>
+                                    <div><span class="font-semibold">Net/Gross:</span> {{ $sections['employment']['NetGrossIncomeIndicator'] ?? 'N/A' }}</div>
+                                </div>
+                            @else
+                                <p class="text-sm text-slate-500">No employment info found.</p>
+                            @endif
                         </div>
                     </div>
 
@@ -282,28 +319,28 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-
-                    <div class="tab-panel hidden" id="tab-emails">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-sm">
-                                <thead class="text-left text-slate-500">
-                                    <tr>
-                                        <th class="py-2 pr-4">Seq</th>
-                                        <th class="py-2 pr-4">Email</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($sections['emails'] as $row)
-                                        <tr class="border-t border-slate-100">
-                                            <td class="py-2 pr-4">{{ $row->seq }}</td>
-                                            <td class="py-2 pr-4">{{ $row->emai_address }}</td>
+                        <div class="mt-6">
+                            <h3 class="text-sm font-semibold text-slate-700 mb-3">Emails</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="text-left text-slate-500">
+                                        <tr>
+                                            <th class="py-2 pr-4">Seq</th>
+                                            <th class="py-2 pr-4">Email</th>
                                         </tr>
-                                    @empty
-                                        <tr><td class="py-2 text-slate-500" colspan="2">No emails found.</td></tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($sections['emails'] as $row)
+                                            <tr class="border-t border-slate-100">
+                                                <td class="py-2 pr-4">{{ $row->seq }}</td>
+                                                <td class="py-2 pr-4">{{ $row->emai_address }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr><td class="py-2 text-slate-500" colspan="2">No emails found.</td></tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
