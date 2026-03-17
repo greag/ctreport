@@ -329,12 +329,16 @@ class ReportController extends Controller
             $summary['color_counts'][$color] = ($summary['color_counts'][$color] ?? 0) + 1;
             $institution = trim((string) ($row->institution ?? ''));
             $accountNumber = trim((string) ($row->account_number ?? ''));
+            $accountType = trim((string) ($row->account_type ?? ''));
             $labelParts = [];
             if ($institution !== '') {
                 $labelParts[] = $institution;
             }
             if ($accountNumber !== '') {
                 $labelParts[] = $accountNumber;
+            }
+            if ($accountType !== '') {
+                $labelParts[] = $accountType;
             }
             $label = $labelParts ? implode(' - ', $labelParts) : (string) ($row->seq ?? $row->cir_account_id ?? '');
             $summary['color_accounts'][$color][] = $label;
