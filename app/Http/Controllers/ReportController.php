@@ -47,7 +47,7 @@ class ReportController extends Controller
             $query->where('users.mobile_number', $filters['mobile_number']);
         }
 
-        $results = $query->limit(50)->get();
+        $results = $query->paginate(25)->withQueryString();
 
         return view('report-viewer', [
             'filters' => $filters,

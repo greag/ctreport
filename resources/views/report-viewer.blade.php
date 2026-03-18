@@ -43,14 +43,14 @@
                 </form>
             @endif
 
-            @if(count($results))
+            @if($results->count())
                 <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
                     <h2 class="text-xl font-semibold mb-4">Results</h2>
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
                             <thead class="text-left text-slate-500">
                                 <tr>
-                                    <th class="py-2 pr-4">Report ID</th>
+                                    <th class="py-2 pr-4">S.No</th>
                                     <th class="py-2 pr-4">Customer Name</th>
                                     <th class="py-2 pr-4">Processed By</th>
                                     <th class="py-2 pr-4">Report Type</th>
@@ -62,7 +62,7 @@
                             <tbody>
                                 @foreach($results as $row)
                                     <tr class="border-t border-slate-100">
-                                        <td class="py-2 pr-4">{{ $row->report_id }}</td>
+                                        <td class="py-2 pr-4">{{ $results->firstItem() + $loop->index }}</td>
                                         <td class="py-2 pr-4">{{ $row->customer_name ?? 'N/A' }}</td>
                                         <td class="py-2 pr-4">{{ $row->employee_name ?? 'N/A' }}</td>
                                         <td class="py-2 pr-4">{{ $row->score_type }}</td>
@@ -145,6 +145,9 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+                    <div class="mt-4">
+                        {{ $results->links() }}
                     </div>
                 </div>
             @endif
