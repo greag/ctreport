@@ -330,6 +330,16 @@ class ReportController extends Controller
             $institution = trim((string) ($row->institution ?? ''));
             $accountNumber = trim((string) ($row->account_number ?? ''));
             $accountType = trim((string) ($row->account_type ?? ''));
+            $ownership = trim((string) ($row->ownership_type ?? $row->ownership ?? $row->ownership_indicator ?? ''));
+            $balanceRaw = $row->balance ?? null;
+            $balanceAmount = $this->parseAmount($balanceRaw);
+            $balanceText = '';
+            if ($balanceRaw !== null) {
+                $balanceRawText = trim((string) $balanceRaw);
+                if ($balanceRawText !== '' && strtoupper($balanceRawText) !== 'N/A' && $balanceRawText !== '-' && $balanceRawText !== '--') {
+                    $balanceText = 'Current Balance INR ' . number_format($balanceAmount, 0, '.', '');
+                }
+            }
             $labelParts = [];
             if ($institution !== '') {
                 $labelParts[] = $institution;
@@ -339,6 +349,12 @@ class ReportController extends Controller
             }
             if ($accountType !== '') {
                 $labelParts[] = $accountType;
+            }
+            if ($balanceText !== '') {
+                $labelParts[] = $balanceText;
+            }
+            if ($ownership !== '' && strtoupper($ownership) !== 'N/A') {
+                $labelParts[] = 'Ownership : ' . $ownership . ' -';
             }
             $label = $labelParts ? implode(' - ', $labelParts) : (string) ($row->seq ?? $row->cir_account_id ?? '');
             $summary['color_accounts'][$color][] = $label;
