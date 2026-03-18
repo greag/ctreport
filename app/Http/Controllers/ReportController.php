@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Services\ExcelExporter;
 use App\Services\ReportProcessor;
 use App\Services\ReportStorageService;
@@ -362,11 +363,22 @@ class ReportController extends Controller
         }
         $summary['summary_text'] = $this->buildScopeSummaryText($summary['color_counts'], $summary['color_accounts']);
 
+        $emptyResults = new LengthAwarePaginator(
+            [],
+            0,
+            100,
+            1,
+            [
+                'path' => request()->url(),
+                'query' => request()->query(),
+            ]
+        );
+
         return view('report-viewer', [
             'filters' => [
                 'mobile_number' => '',
             ],
-            'results' => [],
+            'results' => $emptyResults,
             'report' => $report,
             'sections' => $sections,
             'summary' => $summary,
