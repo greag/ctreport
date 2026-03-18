@@ -643,8 +643,8 @@
                                 <div class="text-lg font-semibold">{{ number_format($summary['total_overdue'] ?? 0, 2) }}</div>
                             </div>
                         </div>
-                        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            @foreach(['Red','Orange','Yellow','Light Green','Green'] as $color)
+                        <div class="mt-6 grid grid-cols-1 gap-4 text-sm">
+                            @foreach(['Red','Orange','Yellow','Green','Light Green'] as $color)
                                 <div class="rounded-lg border border-slate-200 bg-white p-4">
                                     <div class="font-semibold text-slate-700">{{ $color }} Accounts ({{ $summary['color_counts'][$color] ?? 0 }})</div>
                                     <div class="text-slate-500 mt-2">
