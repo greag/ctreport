@@ -27,6 +27,108 @@ class ExcelExporter
         return $tempPath;
     }
 
+    public function createAccountsExport(iterable $rows, string $fileName): string
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Accounts');
+
+        $headers = [
+            'Seq',
+            'Institution',
+            'Account #',
+            'Type',
+            'Ownership',
+            'Balance',
+            'Past Due',
+            'Sanction',
+            'High Credit',
+            'Credit Limit',
+            'Cash Limit',
+            'Date Opened',
+            'Date Closed',
+            'Date Reported',
+            'Amount Overdue',
+            'Rate of Interest',
+            'Repayment Tenure',
+            'EMI Amount',
+            'Payment Frequency',
+            'Actual Payment Amount',
+            'Last Payment Date',
+            'Value of Collateral',
+            'Type of Collateral',
+            'Suit - Filed / Willful Default',
+            'Credit Facility Status',
+            'Written-off Amount (Total)',
+            'Written-off Amount (Principal)',
+            'Settlement Amount',
+        ];
+
+        $data = [$headers];
+        $pick = function ($row, array $keys) {
+            foreach ($keys as $key) {
+                $val = data_get($row, $key);
+                if ($val !== null) {
+                    return $val;
+                }
+            }
+            return null;
+        };
+
+        foreach ($rows as $row) {
+            $data[] = [
+                $this->cleanValue($pick($row, ['seq'])),
+                $this->cleanValue($pick($row, ['institution'])),
+                $this->cleanValue($pick($row, ['account_number'])),
+                $this->cleanValue($pick($row, ['account_type'])),
+                $this->cleanValue($pick($row, ['ownership_type'])),
+                $this->cleanValue($pick($row, ['balance'])),
+                $this->cleanValue($pick($row, ['PastDueAmount', 'past_due_amount', 'amount_overdue_value', 'amount_overdue'])),
+                $this->cleanValue($pick($row, ['sanction_amount'])),
+                $this->cleanValue($pick($row, ['high_credit'])),
+                $this->cleanValue($pick($row, ['credit_limit'])),
+                $this->cleanValue($pick($row, ['cash_limit_value', 'cash_limit', 'CashLimit'])),
+                $this->cleanValue($pick($row, ['data_opened', 'date_opened'])),
+                $this->cleanValue($pick($row, ['date_closed'])),
+                $this->cleanValue($pick($row, ['date_reported', 'date_reported_and_certified'])),
+                $this->cleanValue($pick($row, ['amount_overdue_value', 'amount_overdue', 'PastDueAmount', 'past_due_amount'])),
+                $this->cleanValue($pick($row, ['rate_of_interest_value', 'InterestRate', 'interest_rate'])),
+                $this->cleanValue($pick($row, ['repayment_tenure_value', 'repayment_tenure'])),
+                $this->cleanValue($pick($row, ['emi_amount_value', 'installment_amount'])),
+                $this->cleanValue($pick($row, ['payment_frequency_value', 'term_frequency'])),
+                $this->cleanValue($pick($row, ['actual_payment_amount_value', 'last_payment'])),
+                $this->cleanValue($pick($row, ['last_payment_date_value', 'last_payment_date'])),
+                $this->cleanValue($pick($row, ['collateral_value_value', 'CollateralValue'])),
+                $this->cleanValue($pick($row, ['collateral_type_value', 'CollateralType'])),
+                $this->cleanValue($pick($row, ['suit_filed_value', 'suit_filed_status'])),
+                $this->cleanValue($pick($row, ['credit_facility_status_value', 'account_status'])),
+                $this->cleanValue($pick($row, ['written_off_total_value', 'write_off_amount'])),
+                $this->cleanValue($pick($row, ['written_off_principal_value', 'write_off_amount'])),
+                $this->cleanValue($pick($row, ['settlement_amount_value', 'settlement_amount'])),
+            ];
+        }
+
+        $sheet->fromArray($data, null, 'A1');
+
+        $tempPath = storage_path('app/results/' . $fileName . '.xlsx');
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        return $tempPath;
+    }
+
+    private function cleanValue($value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+        $text = trim((string) $value);
+        if ($text === '' || strtoupper($text) === 'N/A') {
+            return '';
+        }
+        return $text;
+    }
+
     private function addReportInformationSheet(Spreadsheet $spreadsheet, array $data): void
     {
         $reportInfo = $data['ReportInformation'] ?? [];

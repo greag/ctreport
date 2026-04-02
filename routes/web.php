@@ -4,6 +4,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UiController;
 use App\Http\Controllers\OtpAuthController;
 use App\Http\Controllers\EmployeeDirectoryController;
+use App\Http\Controllers\AdminAccountsController;
 use App\Models\EmployeeDirectory;
 use Illuminate\Support\Facades\Route;
 
@@ -50,6 +51,8 @@ Route::middleware('otp.auth')->group(function () {
 });
 
 Route::middleware(['otp.auth', 'otp.admin'])->group(function () {
+    Route::get('/admin/accounts', [AdminAccountsController::class, 'index'])->name('admin.accounts');
+    Route::get('/admin/accounts/download', [AdminAccountsController::class, 'downloadExcel'])->name('admin.accounts.download');
     Route::get('/reports/{reportId}/download-pdf', [ReportController::class, 'downloadPdf'])->name('reports.downloadPdf');
     Route::get('/reports/{reportId}/download-text', [ReportController::class, 'downloadText'])->name('reports.downloadText');
     Route::get('/reports/{reportId}/download-json', [ReportController::class, 'downloadJson'])->name('reports.downloadJson');

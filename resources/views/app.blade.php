@@ -35,6 +35,11 @@
                         </button>
                     </form>
                 </div>
+                @if($isAdmin ?? false)
+                    <div class="mt-4 flex justify-center sm:justify-end">
+                        <a href="/admin/accounts" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">Admin: Account Directory</a>
+                    </div>
+                @endif
             </header>
 
             <main class="bg-white shadow-xl rounded-2xl p-6 sm:p-10 border border-slate-200">
