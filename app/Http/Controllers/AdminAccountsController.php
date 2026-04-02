@@ -10,6 +10,7 @@ class AdminAccountsController extends Controller
 {
     private const EXPORT_HEADERS = [
         'Seq',
+        'Customer Mobile',
         'Institution',
         'Account #',
         'Type',
@@ -53,7 +54,12 @@ class AdminAccountsController extends Controller
             ->orderBy('institution')
             ->pluck('institution');
 
-        $query = DB::table('cir_retail_account_details');
+        $query = DB::table('cir_retail_account_details')
+            ->leftJoin('users', 'cir_retail_account_details.user_id', '=', 'users.user_id')
+            ->select([
+                'cir_retail_account_details.*',
+                'users.mobile_number as customer_mobile',
+            ]);
         if ($filters['institution'] !== '') {
             $query->where('institution', $filters['institution']);
         }
@@ -76,7 +82,12 @@ class AdminAccountsController extends Controller
     {
         $institution = trim((string) $request->query('institution', ''));
 
-        $query = DB::table('cir_retail_account_details');
+        $query = DB::table('cir_retail_account_details')
+            ->leftJoin('users', 'cir_retail_account_details.user_id', '=', 'users.user_id')
+            ->select([
+                'cir_retail_account_details.*',
+                'users.mobile_number as customer_mobile',
+            ]);
         if ($institution !== '') {
             $query->where('institution', $institution);
         }
@@ -102,7 +113,12 @@ class AdminAccountsController extends Controller
     {
         $institution = trim((string) $request->query('institution', ''));
 
-        $query = DB::table('cir_retail_account_details');
+        $query = DB::table('cir_retail_account_details')
+            ->leftJoin('users', 'cir_retail_account_details.user_id', '=', 'users.user_id')
+            ->select([
+                'cir_retail_account_details.*',
+                'users.mobile_number as customer_mobile',
+            ]);
         if ($institution !== '') {
             $query->where('institution', $institution);
         }
@@ -131,6 +147,7 @@ class AdminAccountsController extends Controller
     {
         return [
             $this->cleanValue($this->pickValue($row, ['seq'])),
+            $this->cleanValue($this->pickValue($row, ['customer_mobile', 'mobile_number'])),
             $this->cleanValue($this->pickValue($row, ['institution'])),
             $this->cleanValue($this->pickValue($row, ['account_number'])),
             $this->cleanValue($this->pickValue($row, ['account_type'])),

@@ -89,6 +89,7 @@
                             <thead class="text-left text-slate-600 bg-slate-100 sticky top-0 z-10">
                                 <tr>
                                     <th class="py-2 px-3 w-16 border border-slate-200">Seq</th>
+                                    <th class="py-2 px-3 w-36 border border-slate-200">Customer Mobile</th>
                                     <th class="py-2 px-3 w-40 border border-slate-200">Institution</th>
                                     <th class="py-2 px-3 w-44 border border-slate-200">Account #</th>
                                     <th class="py-2 px-3 w-36 border border-slate-200">Type</th>
@@ -125,6 +126,7 @@
                                     @endphp
                                     <tr class="{{ $rowClass }}">
                                         <td class="py-2 px-3 border border-slate-200 align-top break-words">{{ $displayValue($pickValue($row, ['seq'])) }}</td>
+                                        <td class="py-2 px-3 border border-slate-200 align-top break-words">{{ $displayValue($pickValue($row, ['customer_mobile', 'mobile_number'])) }}</td>
                                         <td class="py-2 px-3 border border-slate-200 align-top break-words">{{ $displayValue($pickValue($row, ['institution'])) }}</td>
                                         <td class="py-2 px-3 border border-slate-200 align-top break-words">{{ $displayValue($pickValue($row, ['account_number'])) }}</td>
                                         <td class="py-2 px-3 border border-slate-200 align-top break-words">{{ $displayValue($pickValue($row, ['account_type'])) }}</td>

@@ -35,6 +35,7 @@ class ExcelExporter
 
         $headers = [
             'Seq',
+            'Customer Mobile',
             'Institution',
             'Account #',
             'Type',
@@ -78,6 +79,7 @@ class ExcelExporter
         foreach ($rows as $row) {
             $data[] = [
                 $this->cleanValue($pick($row, ['seq'])),
+                $this->cleanValue($pick($row, ['customer_mobile', 'mobile_number'])),
                 $this->cleanValue($pick($row, ['institution'])),
                 $this->cleanValue($pick($row, ['account_number'])),
                 $this->cleanValue($pick($row, ['account_type'])),
