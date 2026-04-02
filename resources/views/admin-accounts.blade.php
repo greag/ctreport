@@ -36,13 +36,22 @@
                         <button class="px-5 py-2 bg-indigo-600 text-white rounded-md">Search</button>
                         <a href="/admin/accounts" class="px-5 py-2 border border-slate-300 rounded-md">Clear</a>
                     </div>
-                    <div class="md:text-right">
+                    <div class="md:text-right flex flex-wrap gap-2 md:justify-end">
                         <a href="/admin/accounts/download?institution={{ urlencode($filters['institution']) }}"
                            class="inline-flex items-center justify-center px-4 py-2 border border-emerald-500 text-emerald-700 rounded-md hover:bg-emerald-50">
                             Download Excel
                         </a>
+                        <a href="/admin/accounts/download-csv?institution={{ urlencode($filters['institution']) }}"
+                           class="inline-flex items-center justify-center px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50">
+                            Download CSV (Large)
+                        </a>
                     </div>
                 </div>
+                @if($filters['institution'] === '')
+                    <div class="mt-3 text-xs text-slate-500">
+                        Full Excel export may fail on large datasets. Use CSV for full exports.
+                    </div>
+                @endif
             </form>
 
             <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
