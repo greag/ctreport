@@ -103,10 +103,23 @@ class ReportController extends Controller
         $phoneMeta = [];
         $employmentMeta = null;
         $warnings = [];
+        $reportDateDisplay = null;
         if (!empty($report->json_response)) {
             $payload = json_decode($report->json_response, true);
             if (is_array($payload)) {
                 $warnings = $payload['InputResponse']['Warnings'] ?? [];
+                $reportDateRaw = $payload['InputResponse']['ReportInformation']['ReportDate'] ?? null;
+                if ($reportDateRaw) {
+                    $reportDateRaw = trim((string) $reportDateRaw);
+                    if ($reportDateRaw !== '') {
+                        try {
+                            $reportDateDisplay = \Carbon\Carbon::createFromFormat('d/m/Y', $reportDateRaw)
+                                ->format('d/m/Y');
+                        } catch (\Exception $e) {
+                            $reportDateDisplay = $reportDateRaw;
+                        }
+                    }
+                }
                 $jsonIds = $payload['InputResponse']['IDAndContactInfo']['Identifications'] ?? [];
                 foreach ($jsonIds as $id) {
                     $seq = isset($id['Sequence']) ? (string) $id['Sequence'] : '';
@@ -363,6 +376,19 @@ class ReportController extends Controller
         }
         $summary['summary_text'] = $this->buildScopeSummaryText($summary['color_counts'], $summary['color_accounts']);
 
+        if (!$reportDateDisplay) {
+            $reportDateDisplay = $report->generated_at;
+            if ($reportDateDisplay) {
+                try {
+                    $reportDateDisplay = \Carbon\Carbon::parse($reportDateDisplay)
+                        ->setTimezone(config('app.timezone'))
+                        ->format('d/m/Y');
+                } catch (\Exception $e) {
+                    $reportDateDisplay = $report->generated_at;
+                }
+            }
+        }
+
         $emptyResults = new LengthAwarePaginator(
             [],
             0,
@@ -384,6 +410,7 @@ class ReportController extends Controller
             'summary' => $summary,
             'historyByAccount' => $historyByAccount,
             'accountById' => $accountById,
+            'reportDateDisplay' => $reportDateDisplay,
             'isAdmin' => $this->isAdminUser(request()),
         ]);
     }

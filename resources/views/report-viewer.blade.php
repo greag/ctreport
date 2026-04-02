@@ -202,7 +202,7 @@
                     <div class="tab-panel" id="tab-report">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                             <div><span class="font-semibold">Score:</span> {{ $report->credit_score }}</div>
-                            <div><span class="font-semibold">Processed Date:</span> {{ $reportProcessedAt }}</div>
+                            <div><span class="font-semibold">Report Date:</span> {{ $reportDateDisplay }}</div>
                             <div><span class="font-semibold">Report Type:</span> {{ $report->score_type }}</div>
                             <div><span class="font-semibold">Control Number:</span> {{ $report->report_order_number }}</div>
                         </div>
